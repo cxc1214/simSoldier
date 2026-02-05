@@ -13,6 +13,9 @@ const state = {
         timer: null,
         spawnTimer: null,
         mosquitoes: []
+    },
+    training: {
+        completed: [] // Array of day IDs (e.g., 1, 2, 3...)
     }
 };
 
@@ -89,7 +92,8 @@ const dom = {
         chat: document.getElementById('view-chat'),
         docs: document.getElementById('view-docs'),
         video: document.getElementById('view-video'),
-        game: document.getElementById('view-game')
+        game: document.getElementById('view-game'),
+        locations: document.getElementById('view-locations')
     },
 
     // Home Widgets
@@ -111,6 +115,7 @@ const dom = {
     btnSetupDate: document.getElementById('btn-setup-date'),
     btnFakeCountdown: document.getElementById('btn-fake-countdown'),
     btnUnlockGuest: document.getElementById('btn-unlock-guest'),
+    countdownRing: document.getElementById('countdown-ring'),
 
     // Tasks
     tasksCard: document.getElementById('tasks-card'),
@@ -147,7 +152,27 @@ const dom = {
     gameTimer: document.getElementById('game-timer'),
     finalScore: document.getElementById('final-score'),
     finalMessage: document.getElementById('final-message'),
-    mosquitoContainer: document.getElementById('mosquito-container')
+    finalMessage: document.getElementById('final-message'),
+    mosquitoContainer: document.getElementById('mosquito-container'),
+
+    // Training Progress
+    trainingProgressBar: document.getElementById('training-progress-bar'),
+    trainingProgressText: document.getElementById('training-progress-text'),
+    trainingContent: document.getElementById('training-content'),
+
+    // Calendar
+    calendarPanel: document.getElementById('calendar-panel'),
+    calendarGrid: document.getElementById('calendar-grid'),
+    calendarMonthYear: document.getElementById('calendar-month-year'),
+
+    // Daily Task Progress
+    dailyTaskBar: document.getElementById('daily-task-bar'),
+    dailyTaskPercent: document.getElementById('daily-task-percent'),
+    taskCheckboxes: document.querySelectorAll('#tasks-list input[type="checkbox"]'),
+
+    // Location Widget
+    widgetLocation: document.getElementById('widget-location'),
+    locationDisplay: document.getElementById('location-display')
 };
 
 // --- Logic ---
@@ -223,6 +248,11 @@ function setupEventListeners() {
     });
     dom.btnClosePlayer.addEventListener('click', closeVideo);
 
+    // Daily Tasks
+    dom.taskCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateDailyTaskProgress);
+    });
+
     // Game
     dom.linkGame.addEventListener('click', () => switchTab('game'));
     dom.linkVideo.addEventListener('click', () => switchTab('video'));
@@ -248,7 +278,19 @@ function setupEventListeners() {
         dom.countdownContentUser.classList.add('hidden');
         dom.countdownTitle.textContent = "距離入伍";
         dom.btnEndFake.classList.add('hidden');
+        dom.btnEndFake.classList.add('hidden');
         state.userData.tempCountdown = false;
+    });
+
+    // Training Card Click
+    // We delegate the click to the container because cards are static but we might render them dynamically later
+    // For now they are static HTML, so let's attach listeners to them
+    dom.trainingContent.querySelectorAll('.grid > div').forEach((card, index) => {
+        // Add ID to card for tracking
+        const dayId = index + 1;
+        card.setAttribute('data-day', dayId);
+
+        card.addEventListener('click', () => toggleTrainingDay(dayId, card));
     });
 }
 
@@ -294,25 +336,62 @@ function switchTab(tabId) {
     }
 }
 
-function handleOnboardingSubmit() {
-    const name = dom.inputName.value.trim();
-    const date = dom.inputDate.value;
-    const role = dom.inputRole.value;
-    const disability = dom.inputDisabilityType.value;
-    const height = parseFloat(dom.inputHeight.value);
-    const weight = parseFloat(dom.inputWeight.value);
+async function handleOnboardingSubmit() {
+    const name = document.getElementById('input-name').value;
+    const date = document.getElementById('input-date').value;
+    const role = document.getElementById('input-role').value;
+    const disability = document.getElementById('input-disability-type').value;
+    const height = document.getElementById('input-height').value;
+    const weight = document.getElementById('input-weight').value;
+    const btnSubmit = document.getElementById('btn-submit-onboarding');
 
-    if (!name) {
-        alert("請輸入姓名");
+    if (!name || !date) {
+        alert('請填寫完整資訊');
         return;
     }
 
-    state.userData = { name, date, role, disability, height, weight };
-    state.isLoggedIn = true;
-    state.serviceStatus = determineServiceType(bmi(height, weight), role, disability);
+    const userData = { name, date, role, disability, height, weight };
 
-    updateUIForUser();
-    dom.modalOnboarding.classList.add('hidden');
+    // Loading State
+    const originalText = btnSubmit.innerHTML;
+    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>連線中...';
+    btnSubmit.disabled = true;
+    btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+
+    try {
+        // Simulate delay + API Call
+        const delay = new Promise(resolve => setTimeout(resolve, 1500));
+        const apiCall = fetch('/api/user_settings_edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        const [_, response] = await Promise.all([delay, apiCall]);
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        // Only update local state if API success
+        state.userData = userData;
+        state.isLoggedIn = true;
+        state.serviceStatus = determineServiceType(bmi(height, weight), role, disability);
+
+        updateUIForUser();
+        dom.modalOnboarding.classList.add('hidden');
+
+    } catch (error) {
+        console.error('Error saving user settings:', error);
+        alert('資料儲存失敗，請稍後再試');
+    } finally {
+        // Reset Button
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
 }
 
 function handleLogout() {
@@ -367,7 +446,18 @@ function updateUIForUser() {
         dom.countdownContentUser.classList.remove('hidden');
         dom.countdownContentExempt.classList.add('hidden');
         updateCountdown();
+        // Update Location
+        if (state.userData.location) {
+            dom.locationDisplay.textContent = state.userData.location;
+            dom.widgetLocation.classList.remove('hidden');
+        } else {
+            dom.widgetLocation.classList.add('hidden');
+        }
     }
+
+    // Calendar
+    renderCalendar();
+    dom.calendarPanel.classList.remove('hidden');
 
     // Tasks (Unlock)
     dom.tasksCard.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
@@ -401,7 +491,7 @@ function updateUIForGuest() {
 
 function determineServiceType(bmiValue, role, disability) {
     if (disability && disability !== 'none') return { type: '免役', reason: '身心障礙證明', icon: '🕊️', nextStep: '持身心障礙證明至公所兵役科辦理核免' };
-    if (role === 'parent_loss') return { type: '補充兵 (12天)', reason: '家庭因素', icon: '🏠', nextStep: '準備戶籍謄本與相關證明申請' };
+    if (role === 'rd_substitute') return { type: '研發替代役', reason: '申請核准', icon: '💻', nextStep: '完成碩士學歷，向內政部申請' };
 
     if (bmiValue < 16.5 || bmiValue > 31.5) return { type: '免役', reason: '體位不合格 (過瘦/過重)', icon: '🏥', nextStep: '等待體檢報告，可能需複檢' };
     if ((bmiValue >= 16.5 && bmiValue < 17) || (bmiValue > 31 && bmiValue <= 31.5)) return { type: '替代役', reason: '替代役體位', icon: '👮', nextStep: '留意替代役申請時程' };
@@ -418,16 +508,74 @@ function updateCountdown() {
     const target = new Date(state.userData.date);
     const today = new Date();
     const diffTime = target - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    dom.daysLeftCount.textContent = diffDays > 0 ? diffDays : 0;
+    // Fake Countdown Override
+    if (state.userData.tempCountdown) {
+        diffDays = 30;
+    }
+
+    // Display Days
+    const displayDays = diffDays > 0 ? diffDays : 0;
+    dom.daysLeftCount.textContent = displayDays;
 
     if (diffDays <= 0) {
         dom.daysLeftCount.textContent = "0";
         dom.countdownTitle.textContent = "入伍日";
+    } else {
+        dom.countdownTitle.textContent = "距離入伍";
     }
+
+    // Chart Logic
+    const maxDays = 365; // Assume 1 year range for full circle
+    let percentage = (displayDays / maxDays) * 100;
+    if (percentage > 100) percentage = 100;
+    if (percentage < 0) percentage = 0;
+
+    // SVG Circle is r=45 -> Circumference = 2 * PI * 45 ≈ 283
+    const circumference = 283;
+    const dashOffset = ((100 - percentage) / 100) * circumference;
+
+    // Animate Ring
+    dom.countdownRing.style.strokeDashoffset = dashOffset; // Changed direction logic: Full = Max time, Empty = 0 time? 
+    // Wait, usually countdowns "drain". 100% -> 0%.
+    // If daysLeft = 365 => 100% full. daysLeft = 0 => 0% empty.
+    // dashOffset = circumference * (1 - percentage/100). 
+    // If percentage is 100, offset is 0 (Full). If percentage is 0, offset is 283 (Empty).
+    // The previous formula "((100 - percentage) / 100) * circumference" is correct for "draining".
+
+    // Color Logic
+    dom.countdownRing.classList.remove('stroke-red-500', 'stroke-orange-500', 'stroke-green-500', 'glow-red', 'glow-orange', 'glow-green', 'shadow-[0_0_15px_rgba(239,68,68,0.5)]', 'shadow-[0_0_15px_rgba(249,115,22,0.5)]', 'shadow-[0_0_15px_rgba(34,197,94,0.5)]');
+
+    // We need to set stroke color manually or via class. 
+    // Let's use Tailwind logic, but we need to force update if using just classList for color.
+    // Actually, in HTML I set hardcoded stroke="#ef4444". I should remove that or override it.
+    // Better to use `setAttribute('stroke', color)`? Or just classes. 
+    // The HTML has `stroke="#ef4444"`. Let's assume we want to override it.
+
+    let colorClass = '';
+    let glowClass = '';
+    let strokeHex = '';
+
+    if (displayDays <= 30) {
+        colorClass = 'stroke-red-500';
+        glowClass = 'glow-red';
+        strokeHex = '#ef4444';
+    } else if (displayDays <= 90) {
+        colorClass = 'stroke-orange-500';
+        glowClass = 'glow-orange';
+        strokeHex = '#f97316';
+    } else {
+        colorClass = 'stroke-green-500';
+        glowClass = 'glow-green';
+        strokeHex = '#22c55e';
+    }
+
+    dom.countdownRing.setAttribute('stroke', strokeHex);
+    dom.countdownRing.classList.add(glowClass);
 }
 setInterval(updateCountdown, 1000 * 60 * 60); // Update every hour
+setTimeout(updateCountdown, 100); // Trigger immediately on load logic
 
 // --- Inventory Logic ---
 function renderInventory() {
@@ -627,6 +775,136 @@ function hitMosquito(e, el) {
     setTimeout(() => el.remove(), 200);
 
     // Sound effect could go here
+}
+
+// --- Training Logic ---
+function toggleTrainingDay(dayId, cardElement) {
+    if (state.training.completed.includes(dayId)) {
+        // Remove
+        state.training.completed = state.training.completed.filter(id => id !== dayId);
+        cardElement.classList.remove('border-green-500', 'bg-green-900/20');
+        cardElement.classList.add('border-l-4', 'border-stone-600');
+        // Reset styled elements inside
+        const badge = cardElement.querySelector('.text-green-400, .text-stone-400'); // simple selector try
+        // Actually better to handle via re-render or just toggle classes.
+        // Let's just toggle a "completed" look
+    } else {
+        // Add
+        state.training.completed.push(dayId);
+        cardElement.classList.remove('border-stone-600');
+        cardElement.classList.add('border-green-500', 'bg-green-900/20');
+
+        // Add checkmark effect?
+        confetti({
+            particleCount: 30,
+            spread: 50,
+            origin: {
+                x: cardElement.getBoundingClientRect().left / window.innerWidth + 0.1,
+                y: cardElement.getBoundingClientRect().top / window.innerHeight + 0.1
+            },
+            colors: ['#22c55e', '#ffffff']
+        });
+    }
+    updateTrainingProgress();
+    updateDailyTaskProgress(); // Sync with Main Dashboard logic
+}
+
+function updateTrainingProgress() {
+    const totalDays = 5; // We have 5 cards hardcoded in HTML
+    const completedCount = state.training.completed.length;
+    const percent = Math.round((completedCount / totalDays) * 100);
+
+    dom.trainingProgressBar.style.width = `${percent}%`;
+    dom.trainingProgressText.textContent = `${percent}%`;
+
+    if (percent === 100) {
+        dom.trainingProgressBar.classList.add('shadow-[0_0_15px_rgba(34,197,94,0.8)]');
+    } else {
+        dom.trainingProgressBar.classList.remove('shadow-[0_0_15px_rgba(34,197,94,0.8)]');
+    }
+}
+
+
+
+// --- Daily Task Logic ---
+function updateDailyTaskProgress() {
+    const totalCheckboxes = dom.taskCheckboxes.length;
+    const trainingTaskWeight = 1; // Training counts as 1 task
+    const total = totalCheckboxes + trainingTaskWeight; // Total items
+
+    let checked = 0;
+
+    // Count checkboxes
+    dom.taskCheckboxes.forEach(cb => {
+        if (cb.checked) checked++;
+    });
+
+    // Count Training (If any training is done, count as complete for "Today's Training")
+    // In a real app, this would check if *today's* specific training is done.
+    if (state.training.completed.length > 0) {
+        checked += trainingTaskWeight;
+    }
+
+    const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
+
+    dom.dailyTaskBar.style.width = `${percent}%`;
+    dom.dailyTaskPercent.textContent = `${percent}%`;
+
+    if (percent === 100) {
+        dom.dailyTaskBar.classList.add('shadow-[0_0_10px_rgba(34,197,94,0.8)]');
+        // Optional: Trigger confetti
+        createConfetti(dom.dailyTaskBar.getBoundingClientRect().x, dom.dailyTaskBar.getBoundingClientRect().y);
+    } else {
+        dom.dailyTaskBar.classList.remove('shadow-[0_0_10px_rgba(34,197,94,0.8)]');
+    }
+}
+
+// --- Calendar Logic ---
+function renderCalendar() {
+    if (!state.userData || !state.userData.date) return;
+
+    const today = new Date();
+    const targetDate = new Date(state.userData.date);
+
+    // Determine which month to show (Current month)
+    const year = today.getFullYear();
+    const month = today.getMonth(); // 0-indexed
+
+    dom.calendarMonthYear.textContent = `${year} / ${(month + 1).toString().padStart(2, '0')}`;
+    dom.calendarGrid.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1).getDay(); // 0 (Sun) - 6 (Sat)
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Empty slots
+    for (let i = 0; i < firstDay; i++) {
+        const div = document.createElement('div');
+        dom.calendarGrid.appendChild(div);
+    }
+
+    // Days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const div = document.createElement('div');
+        div.textContent = d;
+        div.className = 'calendar-day';
+
+        // Check Today
+        if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+            div.classList.add('today');
+        }
+
+        // Check Target
+        if (d === targetDate.getDate() && month === targetDate.getMonth() && year === targetDate.getFullYear()) {
+            div.classList.add('enlist-day');
+        }
+
+        // Check Past
+        if (d < today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+            div.classList.add('past');
+        }
+
+        dom.calendarGrid.appendChild(div);
+    }
 }
 
 function openOnboarding() {
