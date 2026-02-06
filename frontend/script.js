@@ -50,10 +50,72 @@ const INITIAL_BACKPACK = [
     { id: 14, name: "黑色長襪", category: "clothing", acquired: false, required: true, note: "過腳踝" },
 ];
 
-const QUICK_PACKS = {
-    life: [8, 9, 10], // IDs
-    med: "診斷證明書" // Special handling
+const DOCS_DATA = {
+    units: {
+        title: "全國役政單位資料",
+        content: "TABLE_PLACEHOLDER",
+        link: null
+    },
+    recheck: {
+        title: "體位複檢標準表",
+        content: "若您對體檢結果有疑義（如BMI過高/過低、視力問題、扁平足等），可申請複檢。<br><br>請參考下方標準圖表或是點擊連結查看詳細法規。<br><br><img src='docs/體位區分標準圖.png' class='w-full rounded mt-4 border border-stone-600' alt='體位區分標準圖'>",
+        link: "https://dca.moi.gov.tw/PhysicalStatus/"
+    },
+    contact: {
+        title: "各縣市役政單位通訊錄",
+        content: "若您有兵單遺失、徵集日期查詢、抵免役期辦理等問題，請直接聯繫戶籍地公所兵役科。<br><br>詳細電話與地址請點擊下方連結至內政部役政司網站查詢。",
+        link: "https://dca.moi.gov.tw/chaspx/news.aspx?web=225"
+    },
+    rights: {
+        title: "軍人權益懶人包",
+        content: "包含薪資福利、喪葬補助、軍保醫療、以及申訴管道 (1985) 之完整說明。<br><br>當兵不是坐牢，保障自身權益是您的義務。若遇不當管教或權益受損，請利用申訴管道。",
+        link: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=F0030049"
+    }
 };
+
+// Generate Table for Units
+const rows = 24;
+let tableHtml = '<div class="overflow-x-auto"><table class="w-full text-left text-xs text-stone-300 border-collapse min-w-[500px]">';
+tableHtml += '<thead><tr class="bg-stone-800 text-stone-400 border-b border-stone-700"><th class="p-2">單位</th><th class="p-2">電話</th><th class="p-2">傳真</th><th class="p-2">地址</th><th class="p-2">網址</th></tr></thead>';
+tableHtml += '<tbody>';
+
+const unitsData = [
+    { name: "新北市政府民政局", phone: "02-29603456", fax: "02-29693894", addr: "新北市板橋區中山路1段161號11、14樓", url: "http://www.ca.ntpc.gov.tw/" },
+    { name: "臺北市政府兵役局", phone: "02-23654361", fax: "02-23673072", addr: "臺北市中正區羅斯福路四段92號9樓", url: "http://www.tcdms.taipei.gov.tw/" },
+    { name: "臺中市政府民政局", phone: "04-22289111", fax: "04-22202480", addr: "臺中市臺中港路2段89號6樓", url: "http://www.civil.taichung.gov.tw/" },
+    { name: "臺南市政府民政局", phone: "06-2991111", fax: "06-2982560", addr: "臺南市安平區永華路2段6號", url: "http://www.tainan.gov.tw/agr/default.asp" },
+    { name: "高雄市政府兵役局", phone: "07-3373582", fax: "07-3312241", addr: "高雄市苓雅區四維3路2號4樓", url: "http://mildp.kcg.gov.tw/index.php" },
+    { name: "宜蘭縣政府民政處", phone: "03-9251000#1680", fax: "03-9332434", addr: "宜蘭縣宜蘭市縣政北路1號3樓", url: "http://civil.e-land.gov.tw/" },
+    { name: "桃園縣政府民政局", phone: "03-3322101", fax: "03-3364817", addr: "桃園縣桃園市縣府路1號", url: "http://cab.tycg.gov.tw/" },
+    { name: "新竹縣政府民政處", phone: "03-5518101#268", fax: "03-5513672", addr: "新竹縣竹北市光明六路10號", url: "http://web.hsinchu.gov.tw/civil/" },
+    { name: "苗栗縣政府民政處", phone: "037-322150", fax: "037-354593", addr: "苗栗縣苗栗市縣府路100號", url: "http://www.miaoli.gov.tw/civil_affairs/" },
+    { name: "彰化縣政府民政處", phone: "04-7222151#0122", fax: "04-7293510", addr: "彰化縣彰化市中山路二段416號7樓", url: "http://www.chcg.gov.tw/civil/" },
+    { name: "南投縣政府民政處", phone: "049-2222106", fax: "049-2238404", addr: "南投縣南投市中興路660號", url: "http://www.nantou.gov.tw/" },
+    { name: "雲林縣政府民政處", phone: "05-5322154", fax: "05-5352041", addr: "雲林縣斗六市雲林路二段515號", url: "http://www4.yunlin.gov.tw/civil/" },
+    { name: "嘉義縣政府民政處", phone: "05-3620123#460", fax: "05-3620399", addr: "嘉義縣太保市祥和新村祥和一路東段1號", url: "http://www1.cyhg.gov.tw/civil/" },
+    { name: "屏東縣政府民政處", phone: "08-7324147", fax: "08-7331538", addr: "屏東縣屏東市自由路527號", url: "http://www.pthg.gov.tw/plancab/" },
+    { name: "臺東縣政府民政處", phone: "089-326141", fax: "089-340560", addr: "台東縣台東市中山路276號", url: "http://www.taitung.gov.tw/Civil/" },
+    { name: "花蓮縣政府民政處", phone: "03-8232047", fax: "03-8230576", addr: "花蓮縣花蓮市府後路6號", url: "http://ca.hl.gov.tw/" },
+    { name: "澎湖縣政府民政處", phone: "06-9274400", fax: "06-9274701", addr: "澎湖縣馬公市治平路32號", url: "http://www.penghu.gov.tw/civil/" },
+    { name: "基隆市政府民政處", phone: "02-24201122", fax: "02-24668739", addr: "基隆市中正區正信路205號2樓", url: "http://www.klcg.gov.tw/civil/" },
+    { name: "新竹市政府民政處", phone: "03-5216121#314", fax: "03-5214703", addr: "新竹市中正路120號", url: "http://dep-civil.hccg.gov.tw/" },
+    { name: "嘉義市政府民政處", phone: "05-2254321", fax: "05-2259885", addr: "嘉義市中山路199號", url: "http://www.chiayi.gov.tw/" },
+    { name: "金門縣政府民政局", phone: "082-325753", fax: "082-322613", addr: "金門縣金城鎮民生路60號", url: "http://www.kinmen.gov.tw/" },
+    { name: "連江縣政府民政局", phone: "0836-22485", fax: "0836-22209", addr: "連江縣南竿鄉介壽村76號", url: "http://www.matsu.gov.tw/" }
+];
+
+unitsData.forEach((u, i) => {
+    tableHtml += `<tr class="border-b border-stone-800 hover:bg-stone-800/50">
+        <td class="p-2 text-green-400 font-bold">${u.name}</td>
+        <td class="p-2">${u.phone}</td>
+        <td class="p-2 opacity-60 text-[10px] hidden md:table-cell">${u.fax}</td>
+        <td class="p-2">${u.addr}</td>
+        <td class="p-2"><a href="${u.url}" target="_blank" class="text-blue-400 hover:text-blue-300"><i class="fa-solid fa-link"></i></a></td>
+    </tr>`;
+});
+
+tableHtml += '</tbody></table></div>';
+DOCS_DATA.units.content = tableHtml;
 
 // DOM Elements
 const dom = {
@@ -80,9 +142,17 @@ const dom = {
     headerUserTools: document.getElementById('header-user-tools'),
     btnLoginHeader: document.getElementById('btn-login-header'),
     btnEditProfile: document.getElementById('btn-edit-profile'),
-    btnLogout: document.getElementById('btn-logout'),
+    // btnLogout: document.getElementById('btn-logout'), // Removed from sidebar, kept in header? No, header has duplicate class logic.
     headerNameMobile: document.getElementById('header-name-mobile'),
     headerStatusMobile: document.getElementById('header-status-mobile'),
+
+    // Sidebar Settings
+    btnSettingsSidebar: document.getElementById('btn-settings-sidebar'),
+    settingsMenuSidebar: document.getElementById('settings-menu-sidebar'),
+    btnEditProfileSidebar: document.getElementById('btn-edit-profile-sidebar'),
+    btnGameBackpackSidebar: document.getElementById('btn-game-backpack-sidebar'),
+    btnDeleteAccountSidebar: document.getElementById('btn-delete-account-sidebar'),
+    btnLogoutSidebar: document.getElementById('btn-logout-sidebar'),
 
     // Views
     views: {
@@ -91,6 +161,7 @@ const dom = {
         inventory: document.getElementById('view-inventory'),
         chat: document.getElementById('view-chat'),
         docs: document.getElementById('view-docs'),
+        rhapsody: document.getElementById('view-rhapsody'),
         video: document.getElementById('view-video'),
         game: document.getElementById('view-game'),
         locations: document.getElementById('view-locations')
@@ -122,7 +193,9 @@ const dom = {
     tasksLockOverlay: document.getElementById('tasks-lock-overlay'),
 
     // Inventory
-    inventoryList: document.getElementById('inventory-list'),
+    // Inventory
+    inventoryListRequired: document.getElementById('inventory-list-required'),
+    inventoryListOptional: document.getElementById('inventory-list-optional'),
 
     // Chat
     chatForm: document.getElementById('chat-form'),
@@ -172,21 +245,64 @@ const dom = {
 
     // Location Widget
     widgetLocation: document.getElementById('widget-location'),
-    locationDisplay: document.getElementById('location-display')
+    locationDisplay: document.getElementById('location-display'),
+
+    // Docs Modal
+    modalDocs: document.getElementById('modal-docs'),
+    btnCloseDocs: document.getElementById('btn-close-docs'),
+    docsModalTitle: document.querySelectorAll('#docs-modal-title span')[0], // The text span
+    docsModalContent: document.getElementById('docs-modal-content'),
+    docsModalLink: document.getElementById('docs-modal-link'),
+    // Logout buttons are dynamic usually, but we can grab them by class now
+    docsModalLink: document.getElementById('docs-modal-link'),
+    // Logout buttons are dynamic usually, but we can grab them by class now
+    inputMeds: document.getElementById('input-meds'), // New input
+    targetDateDisplay: document.getElementById('target-date-display'),
+    inputBirthday: document.getElementById('input-birthday')
 };
 
 // --- Logic ---
 
+const currentUser = sessionStorage.getItem('simSoldier_currentUser');
+if (!currentUser) {
+    window.location.href = 'login.html';
+}
+
 function init() {
+    // Check if user has profile data
+    const users = JSON.parse(localStorage.getItem('simSoldier_users') || '{}');
+    const user = users[currentUser];
+
     // Set initial backpack state
-    state.backpack = JSON.parse(JSON.stringify(INITIAL_BACKPACK));
+    state.backpack = JSON.parse(JSON.stringify(INITIAL_BACKPACK)); // Default
+
+    if (user && user.profile) {
+        state.isLoggedIn = true;
+        state.userData = user.profile; // Profile data {name, date, role...}
+        state.serviceStatus = determineServiceType(bmi(user.profile.height, user.profile.weight), user.profile.role, user.profile.disability, user.profile.birthday);
+        updateUIForUser();
+
+        // Dynamic Backpack Items
+        // Dynamic Backpack Items
+        if (state.userData.medication) {
+            state.backpack.push({
+                id: 99,
+                name: "診斷證明書",
+                category: "document",
+                acquired: false,
+                required: true,
+                note: "慢性病佐證(正本)"
+            });
+        }
+    } else {
+        // Should not happen if guarded, but fallback
+        window.location.href = 'login.html';
+    }
+
     renderInventory();
 
     // Event Listeners
     setupEventListeners();
-
-    // Default to guest mode
-    updateUIForGuest();
 }
 
 function setupEventListeners() {
@@ -223,7 +339,28 @@ function setupEventListeners() {
     // Login/Edit Buttons
     const openModal = () => {
         dom.modalOnboarding.classList.remove('hidden');
-        dom.btnCloseOnboarding.classList.remove('hidden'); // Allow closing if opening mainly for edit
+        dom.btnCloseOnboarding.classList.remove('hidden');
+
+        // Pre-fill if user data exists
+        if (state.userData) {
+            dom.inputName.value = state.userData.name || '';
+            dom.inputDate.value = state.userData.date || '';
+            if (dom.inputBirthday) dom.inputBirthday.value = state.userData.birthday || ''; // Pre-fill Birthday
+            dom.inputRole.value = state.userData.role || 'regular';
+            dom.inputHeight.value = state.userData.height || 175;
+            dom.inputWeight.value = state.userData.weight || 70;
+            // Handle Meds
+            if (dom.inputMeds) {
+                dom.inputMeds.checked = state.userData.medication || false;
+            }
+            // Handle Disability Section visibility
+            if (state.userData.role === 'disability') {
+                dom.sectionDisability.classList.remove('hidden');
+                dom.inputDisabilityType.value = state.userData.disability || 'none';
+            } else {
+                dom.sectionDisability.classList.add('hidden');
+            }
+        }
     };
 
     dom.btnLoginSidebar.addEventListener('click', openModal);
@@ -232,13 +369,67 @@ function setupEventListeners() {
     dom.btnUnlockGuest.addEventListener('click', openModal);
     dom.btnSetupDate.addEventListener('click', openModal);
 
-    dom.btnLogout.addEventListener('click', handleLogout);
+    // Sidebar Settings Menu
+    if (dom.btnSettingsSidebar) {
+        dom.btnSettingsSidebar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dom.settingsMenuSidebar.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dom.settingsMenuSidebar.contains(e.target) && e.target !== dom.btnSettingsSidebar) {
+                dom.settingsMenuSidebar.classList.add('hidden');
+            }
+        });
+    }
+
+    if (dom.btnEditProfileSidebar) {
+        dom.btnEditProfileSidebar.addEventListener('click', () => {
+            dom.settingsMenuSidebar.classList.add('hidden');
+            openModal('onboarding');
+        });
+    }
+
+    if (dom.btnGameBackpackSidebar) {
+        dom.btnGameBackpackSidebar.addEventListener('click', () => {
+            dom.settingsMenuSidebar.classList.add('hidden');
+            alert('小遊戲背包功能開發中！');
+        });
+    }
+
+    if (dom.btnDeleteAccountSidebar) {
+        dom.btnDeleteAccountSidebar.addEventListener('click', () => {
+            dom.settingsMenuSidebar.classList.add('hidden');
+            if (confirm('確定要永久刪除帳號嗎？此動作無法復原！\n(Are you sure you want to delete your account? This cannot be undone!)')) {
+                // Clear user data
+                const currentUser = JSON.parse(sessionStorage.getItem('simSoldier_currentUser'));
+                if (currentUser && currentUser.username) {
+                    localStorage.removeItem('simSoldier_user_' + currentUser.username);
+                }
+                sessionStorage.clear();
+
+                // Redirect to loading bar -> login
+                window.location.href = 'loadingbar.html?dest=login.html';
+            }
+        });
+    }
+
+    if (dom.btnLogoutSidebar) {
+        dom.btnLogoutSidebar.addEventListener('click', () => {
+            handleLogout();
+        });
+    }
+
+    // Logout (Header & Mobile) - Keep existing class logic for header?
+    document.querySelectorAll('.btn-logout').forEach(btn => {
+        btn.addEventListener('click', handleLogout);
+    });
 
     // Chat
     dom.chatForm.addEventListener('submit', handleChatSubmit);
 
     // Inventory
-    window.addQuickItem = handleQuickAdd; // Expose to global for HTML onclick
+
 
     // Video
     document.querySelectorAll('.video-item').forEach(item => {
@@ -247,6 +438,17 @@ function setupEventListeners() {
         });
     });
     dom.btnClosePlayer.addEventListener('click', closeVideo);
+
+    // Docs
+    document.querySelectorAll('.btn-doc').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const docType = btn.dataset.doc;
+            openDocsModal(docType);
+        });
+    });
+    dom.btnCloseDocs.addEventListener('click', () => {
+        dom.modalDocs.classList.add('hidden');
+    });
 
     // Daily Tasks
     dom.taskCheckboxes.forEach(checkbox => {
@@ -290,7 +492,13 @@ function setupEventListeners() {
         const dayId = index + 1;
         card.setAttribute('data-day', dayId);
 
-        card.addEventListener('click', () => toggleTrainingDay(dayId, card));
+        const btn = card.querySelector('.btn-confirm-training');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card click if we had one
+                toggleTrainingDay(dayId, card, btn);
+            });
+        }
     });
 }
 
@@ -339,10 +547,12 @@ function switchTab(tabId) {
 async function handleOnboardingSubmit() {
     const name = document.getElementById('input-name').value;
     const date = document.getElementById('input-date').value;
+    const birthday = document.getElementById('input-birthday') ? document.getElementById('input-birthday').value : ''; // Get Birthday
     const role = document.getElementById('input-role').value;
     const disability = document.getElementById('input-disability-type').value;
     const height = document.getElementById('input-height').value;
     const weight = document.getElementById('input-weight').value;
+    const hasMeds = document.getElementById('input-meds').checked;
     const btnSubmit = document.getElementById('btn-submit-onboarding');
 
     if (!name || !date) {
@@ -350,35 +560,31 @@ async function handleOnboardingSubmit() {
         return;
     }
 
-    const userData = { name, date, role, disability, height, weight };
+    const userData = { name, date, birthday, role, disability, height, weight, medication: hasMeds };
 
     // Loading State
     const originalText = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>連線中...';
+    btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>處理中...';
     btnSubmit.disabled = true;
     btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
 
     try {
-        // Simulate delay + API Call
-        const delay = new Promise(resolve => setTimeout(resolve, 1500));
-        const apiCall = fetch('/api/user_settings_edit', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userData)
-        });
+        const currentUser = localStorage.getItem('simSoldier_currentUser');
+        if (!currentUser) throw new Error('Not logged in');
 
-        const [_, response] = await Promise.all([delay, apiCall]);
-
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+        const users = JSON.parse(localStorage.getItem('simSoldier_users') || '{}');
+        if (!users[currentUser]) {
+            // Should verify password but here we trust session
+            users[currentUser] = { createdAt: new Date().toISOString() };
         }
 
-        // Only update local state if API success
+        users[currentUser].profile = userData;
+        localStorage.setItem('simSoldier_users', JSON.stringify(users));
+
+        // Update local state
         state.userData = userData;
         state.isLoggedIn = true;
-        state.serviceStatus = determineServiceType(bmi(height, weight), role, disability);
+        state.serviceStatus = determineServiceType(bmi(height, weight), role, disability, birthday);
 
         updateUIForUser();
         dom.modalOnboarding.classList.add('hidden');
@@ -395,23 +601,8 @@ async function handleOnboardingSubmit() {
 }
 
 function handleLogout() {
-    state.isLoggedIn = false;
-    state.userData = null;
-    state.serviceStatus = null;
-    updateUIForGuest();
-    dom.inputName.value = '';
-    // Optional: Reset backpack?
-    state.backpack = JSON.parse(JSON.stringify(INITIAL_BACKPACK));
-    renderInventory();
-
-    // Reset Chat
-    dom.chatMessages.innerHTML = `
-        <div class="flex justify-start">
-            <div class="max-w-[80%] md:max-w-[60%] p-4 rounded-xl text-base bg-stone-700 text-stone-200 rounded-bl-none shadow-md">
-                死菜鳥！有什麼問題快問！不要浪費我時間！
-            </div>
-        </div>
-    `;
+    sessionStorage.removeItem('simSoldier_currentUser');
+    window.location.href = 'loadingbar.html?dest=login.html';
 }
 
 function updateUIForUser() {
@@ -489,14 +680,29 @@ function updateUIForGuest() {
     dom.tasksLockOverlay.classList.remove('hidden');
 }
 
-function determineServiceType(bmiValue, role, disability) {
+function determineServiceType(bmiValue, role, disability, birthday) {
+    if (role === 'supplementary_12days') return { type: '12天補充兵', reason: '特殊/體位因素', icon: '🎫', nextStep: '準備12天夏令營' };
     if (disability && disability !== 'none') return { type: '免役', reason: '身心障礙證明', icon: '🕊️', nextStep: '持身心障礙證明至公所兵役科辦理核免' };
     if (role === 'rd_substitute') return { type: '研發替代役', reason: '申請核准', icon: '💻', nextStep: '完成碩士學歷，向內政部申請' };
 
     if (bmiValue < 16.5 || bmiValue > 31.5) return { type: '免役', reason: '體位不合格 (過瘦/過重)', icon: '🏥', nextStep: '等待體檢報告，可能需複檢' };
     if ((bmiValue >= 16.5 && bmiValue < 17) || (bmiValue > 31 && bmiValue <= 31.5)) return { type: '替代役', reason: '替代役體位', icon: '👮', nextStep: '留意替代役申請時程' };
 
-    return { type: '常備役', reason: '常備役體位', icon: '🪖', nextStep: '鍛鍊體能，調整作息，準備入營' };
+    // Regular Service Logic (Year 94 = 2005)
+    let type = '常備役';
+    let reason = '常備役體位';
+    if (birthday) {
+        const birthYear = new Date(birthday).getFullYear();
+        if (birthYear >= 2005) {
+            type = '常備役 (1年)';
+            reason = '94年次以後出生';
+        } else {
+            type = '常備役 (4個月)';
+            reason = '83-93年次出生';
+        }
+    }
+
+    return { type: type, reason: reason, icon: '🪖', nextStep: '鍛鍊體能，調整作息，準備入營' };
 }
 
 function bmi(h, w) {
@@ -509,6 +715,11 @@ function updateCountdown() {
     const today = new Date();
     const diffTime = target - today;
     let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Update Target Date Text
+    if (dom.targetDateDisplay) {
+        dom.targetDateDisplay.textContent = '目標：' + state.userData.date;
+    }
 
     // Fake Countdown Override
     if (state.userData.tempCountdown) {
@@ -577,9 +788,20 @@ function updateCountdown() {
 setInterval(updateCountdown, 1000 * 60 * 60); // Update every hour
 setTimeout(updateCountdown, 100); // Trigger immediately on load logic
 
+// --- Location Logic ---
+function toggleLocation(header) {
+    const details = header.nextElementSibling;
+    const arrow = header.querySelector('.fa-chevron-down');
+
+    details.classList.toggle('hidden');
+    arrow.classList.toggle('rotate-180');
+}
+
 // --- Inventory Logic ---
 function renderInventory() {
-    dom.inventoryList.innerHTML = '';
+    dom.inventoryListRequired.innerHTML = '';
+    dom.inventoryListOptional.innerHTML = '';
+
     state.backpack.forEach(item => {
         const div = document.createElement('div');
         div.className = `p-4 rounded-lg border cursor-pointer transition-all hover:bg-stone-700 flex justify-between items-center group ${item.acquired ? 'bg-green-900/20 border-green-700' : 'bg-stone-800 border-stone-700'}`;
@@ -597,7 +819,12 @@ function renderInventory() {
             </div>
             ${item.required ? '<span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">必備</span>' : ''}
         `;
-        dom.inventoryList.appendChild(div);
+
+        if (item.required) {
+            dom.inventoryListRequired.appendChild(div);
+        } else {
+            dom.inventoryListOptional.appendChild(div);
+        }
     });
 }
 
@@ -609,19 +836,28 @@ function toggleItem(id) {
     }
 }
 
-function handleQuickAdd(type) {
-    if (type === 'life') {
-        state.backpack.forEach(item => {
-            if (QUICK_PACKS.life.includes(item.id)) item.acquired = true;
-        });
-    } else if (type === 'med') {
-        const medName = QUICK_PACKS.med;
-        if (!state.backpack.some(i => i.name === medName)) {
-            state.backpack.push({ id: Date.now(), name: medName, category: 'medical', acquired: true, required: true, note: "慢性病處方箋" });
-        }
+
+
+
+
+function openDocsModal(type) {
+    const data = DOCS_DATA[type];
+    if (!data) return;
+
+    dom.docsModalTitle.textContent = data.title;
+    // Support HTML content
+    dom.docsModalContent.innerHTML = data.content;
+
+    if (data.link) {
+        dom.docsModalLink.href = data.link;
+        dom.docsModalLink.classList.remove('hidden');
+    } else {
+        dom.docsModalLink.classList.add('hidden');
     }
-    renderInventory();
+
+    dom.modalDocs.classList.remove('hidden');
 }
+
 
 // --- Chat Logic ---
 function handleChatSubmit(e) {
@@ -778,29 +1014,43 @@ function hitMosquito(e, el) {
 }
 
 // --- Training Logic ---
-function toggleTrainingDay(dayId, cardElement) {
-    if (state.training.completed.includes(dayId)) {
-        // Remove
+function toggleTrainingDay(dayId, cardElement, btnElement) {
+    const isCompleted = state.training.completed.includes(dayId);
+
+    if (isCompleted) {
+        // Remove (Cancel)
         state.training.completed = state.training.completed.filter(id => id !== dayId);
+
+        // UI Reset (Not Completed)
         cardElement.classList.remove('border-green-500', 'bg-green-900/20');
         cardElement.classList.add('border-l-4', 'border-stone-600');
-        // Reset styled elements inside
-        const badge = cardElement.querySelector('.text-green-400, .text-stone-400'); // simple selector try
-        // Actually better to handle via re-render or just toggle classes.
-        // Let's just toggle a "completed" look
+
+        // Button Reset (Green Confirm)
+        if (btnElement) {
+            btnElement.className = "btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1";
+            btnElement.innerHTML = '<i class="fa-solid fa-check"></i> 確認';
+        }
     } else {
-        // Add
+        // Add (Confirm)
         state.training.completed.push(dayId);
+
+        // UI Active (Completed)
         cardElement.classList.remove('border-stone-600');
         cardElement.classList.add('border-green-500', 'bg-green-900/20');
 
-        // Add checkmark effect?
+        // Button Active (Red Cancel)
+        if (btnElement) {
+            btnElement.className = "btn-confirm-training text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1";
+            btnElement.innerHTML = '<i class="fa-solid fa-xmark"></i> 取消';
+        }
+
+        // Add checkmark effect
         confetti({
             particleCount: 30,
             spread: 50,
             origin: {
-                x: cardElement.getBoundingClientRect().left / window.innerWidth + 0.1,
-                y: cardElement.getBoundingClientRect().top / window.innerHeight + 0.1
+                x: btnElement ? btnElement.getBoundingClientRect().left / window.innerWidth : 0.5,
+                y: btnElement ? btnElement.getBoundingClientRect().top / window.innerHeight : 0.5
             },
             colors: ['#22c55e', '#ffffff']
         });
@@ -890,17 +1140,17 @@ function renderCalendar() {
 
         // Check Today
         if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-            div.classList.add('today');
+            div.classList.add('bg-green-500', 'text-white', 'rounded-full', 'font-bold');
         }
 
         // Check Target
         if (d === targetDate.getDate() && month === targetDate.getMonth() && year === targetDate.getFullYear()) {
-            div.classList.add('enlist-day');
+            div.classList.add('bg-red-600', 'text-white', 'rounded-full', 'font-bold');
         }
 
         // Check Past
         if (d < today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-            div.classList.add('past');
+            div.classList.add('text-stone-600');
         }
 
         dom.calendarGrid.appendChild(div);

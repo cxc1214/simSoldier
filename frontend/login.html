@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 - SimSoldier 國軍online模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body
+    class="bg-stone-950 text-stone-200 font-sans min-h-screen flex items-center justify-center relative overflow-hidden">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 z-0 opacity-20 pointer-events-none">
+        <div
+            class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-900 to-transparent">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-green-900 to-transparent">
+        </div>
+        <div
+            class="absolute top-0 left-0 h-full w-[1px] bg-gradient-to-b from-transparent via-green-900 to-transparent">
+        </div>
+        <div
+            class="absolute top-0 right-0 h-full w-[1px] bg-gradient-to-b from-transparent via-green-900 to-transparent">
+        </div>
+
+        <!-- Grid Pattern -->
+        <div class="absolute inset-0"
+            style="background-image: radial-gradient(#1c1917 1px, transparent 1px); background-size: 30px 30px; opacity: 0.3;">
+        </div>
+    </div>
+
+    <div class="w-full max-w-md bg-stone-900 p-8 rounded-lg shadow-2xl border border-stone-700 relative z-10 mx-4">
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div
+                class="w-16 h-16 bg-stone-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-900/50 shadow-lg relative group">
+                <i
+                    class="fa-solid fa-person-military-rifle text-3xl text-green-500 group-hover:scale-110 transition-transform"></i>
+                <div class="absolute inset-0 rounded-full border border-green-500/20 animate-pulse"></div>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2 tracking-wider">SimSoldier</h1>
+            <p class="text-stone-500 font-tech text-sm tracking-widest">MILITARY SIMULATION SYS.</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex mb-8 bg-stone-950 rounded-lg p-1 border border-stone-800">
+            <button id="tab-login"
+                class="flex-1 py-2 rounded-md text-sm font-bold transition-all bg-green-900/30 text-green-400 border border-green-900/50 shadow-inner"
+                onclick="switchTab('login')">
+                登入
+            </button>
+            <button id="tab-register"
+                class="flex-1 py-2 rounded-md text-sm font-bold text-stone-500 hover:text-stone-300 transition-all"
+                onclick="switchTab('register')">
+                註冊
+            </button>
+        </div>
+
+        <!-- Forms -->
+        <div id="form-container" class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            <!-- Login Form -->
+            <form id="form-login" class="space-y-6 animate-fade-in" onsubmit="handleLogin(event)">
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Username / 帳號</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="text" id="login-username" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-stone-700 text-sm"
+                            placeholder="請輸入帳號">
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Password / 密碼</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="password" id="login-password" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-stone-700 text-sm"
+                            placeholder="請輸入密碼">
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-md transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-green-900/20 text-sm tracking-wide">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> 登入系統
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" class="space-y-6 hidden animate-fade-in" onsubmit="handleRegister(event)">
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Name / 姓名</label>
+                    <div class="relative">
+                        <i
+                            class="fa-solid fa-user-plus absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="text" id="reg-username" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-stone-700 text-sm"
+                            placeholder="設定您的姓名">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Birthday / 生日</label>
+                    <div class="relative">
+                        <i
+                            class="fa-solid fa-cake-candles absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="date" id="reg-birthday" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm font-tech">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Entrance Date /
+                        入營日期</label>
+                    <div class="relative">
+                        <i
+                            class="fa-solid fa-calendar-days absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="date" id="reg-date" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm font-tech">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Identity / 身分</label>
+                    <div class="relative">
+                        <i
+                            class="fa-solid fa-id-card absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <select id="reg-role"
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm appearance-none">
+                            <option value="regular">常備兵</option>
+                            <option value="rd_substitute">替代役</option>
+                            <option value="supplementary_12days">補充兵(12天)</option>
+                        </select>
+                        <i
+                            class="fa-solid fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 text-xs pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Height / 身高
+                            (cm)</label>
+                        <input type="number" id="reg-height" required value="175"
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm font-tech text-center">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Weight / 體重
+                            (kg)</label>
+                        <input type="number" id="reg-weight" required value="70"
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm font-tech text-center">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 p-2 bg-stone-950/50 rounded border border-stone-800/50">
+                    <input type="checkbox" id="reg-meds"
+                        class="w-4 h-4 rounded border-stone-700 bg-stone-900 text-green-600 focus:ring-green-500 focus:ring-offset-stone-900">
+                    <label for="reg-meds" class="text-sm text-stone-400 cursor-pointer select-none">我有使用慢性藥物習慣</label>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">New Password /
+                        設定密碼</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="password" id="reg-password" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-stone-700 text-sm"
+                            placeholder="設定您的密碼">
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">Confirm Password /
+                        確認密碼</label>
+                    <div class="relative">
+                        <i
+                            class="fa-solid fa-check-double absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 text-sm"></i>
+                        <input type="password" id="reg-password-confirm" required
+                            class="w-full bg-stone-950 border border-stone-800 rounded-md py-2.5 pl-10 pr-4 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all placeholder-stone-700 text-sm"
+                            placeholder="再次輸入密碼">
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-stone-700 hover:bg-stone-600 text-white font-bold py-3 rounded-md transition-all duration-200 transform hover:scale-[1.02] shadow-lg text-sm tracking-wide">
+                    <i class="fa-solid fa-user-plus mr-2"></i> 註冊帳號
+                </button>
+            </form>
+        </div>
+
+
+
+    </div>
+
+    <script>
+        // Check if already logged in (Session Storage)
+        if (sessionStorage.getItem('simSoldier_currentUser')) {
+            window.location.href = 'index.html';
+        }
+
+        function switchTab(tab) {
+            const loginBtn = document.getElementById('tab-login');
+            const registerBtn = document.getElementById('tab-register');
+            const loginForm = document.getElementById('form-login');
+            const registerForm = document.getElementById('form-register');
+
+
+            if (tab === 'login') {
+                loginBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold transition-all bg-green-900/30 text-green-400 border border-green-900/50 shadow-inner';
+                registerBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold text-stone-500 hover:text-stone-300 transition-all';
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                registerBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold transition-all bg-green-900/30 text-green-400 border border-green-900/50 shadow-inner';
+                loginBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold text-stone-500 hover:text-stone-300 transition-all';
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        // Check if already logged in (Session Storage)
+        if (sessionStorage.getItem('simSoldier_currentUser')) {
+            window.location.href = 'index.html';
+        }
+
+        function switchTab(tab) {
+            const loginBtn = document.getElementById('tab-login');
+            const registerBtn = document.getElementById('tab-register');
+            const loginForm = document.getElementById('form-login');
+            const registerForm = document.getElementById('form-register');
+
+            if (tab === 'login') {
+                loginBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold transition-all bg-green-900/30 text-green-400 border border-green-900/50 shadow-inner';
+                registerBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold text-stone-500 hover:text-stone-300 transition-all';
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                registerBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold transition-all bg-green-900/30 text-green-400 border border-green-900/50 shadow-inner';
+                loginBtn.className = 'flex-1 py-2 rounded-md text-sm font-bold text-stone-500 hover:text-stone-300 transition-all';
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-password-confirm').value;
+
+            // Profile Data
+            const date = document.getElementById('reg-date').value;
+            const role = document.getElementById('reg-role').value;
+            const height = document.getElementById('reg-height').value;
+            const weight = document.getElementById('reg-weight').value;
+            const hasMeds = document.getElementById('reg-meds').checked;
+
+            if (password !== confirm) {
+                alert('密碼不一致！');
+                return;
+            }
+
+            if (username.length < 2) {
+                alert('姓名至少需要 2 個字元！');
+                return;
+            }
+
+            if (!date) {
+                alert('請選擇入營日期！');
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('simSoldier_users') || '{}');
+
+            if (users[username]) {
+                alert('此名稱已被註冊！');
+                return;
+            }
+
+            const profile = {
+                name: username,
+                date: date,
+                role: role,
+                disability: role === 'disability' ? 'physical' : 'none',
+                height: height,
+                weight: weight,
+                medication: hasMeds
+            };
+
+            users[username] = {
+                password,
+                createdAt: new Date().toISOString(),
+                profile: profile
+            };
+
+            localStorage.setItem('simSoldier_users', JSON.stringify(users));
+
+            // Auto Login - Session Storage
+            sessionStorage.setItem('simSoldier_currentUser', username);
+
+            alert('註冊成功！正在進入系統...');
+            document.getElementById('form-register').reset();
+
+            window.location.href = 'index.html';
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            const users = JSON.parse(localStorage.getItem('simSoldier_users') || '{}');
+            const user = users[username];
+
+            if (user && user.password === password) {
+                sessionStorage.setItem('simSoldier_currentUser', username);
+                window.location.href = 'loadingbar.html?dest=index.html';
+            } else {
+                alert('帳號或密碼錯誤！');
+            }
+        }
+    </script>
+</body>
+
+</html>

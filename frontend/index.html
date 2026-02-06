@@ -18,12 +18,23 @@
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
 
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <script>
+        if (!sessionStorage.getItem('simSoldier_currentUser')) {
+            window.location.href = 'login.html';
+        }
+
+        // Force logout on refresh/close
+        window.addEventListener('beforeunload', () => {
+            // Check if it's a navigation within the app? No, user requested "refresh = re-login".
+            // So we clear session key.
+            sessionStorage.removeItem('simSoldier_currentUser');
+        });
+    </script>
 </head>
 
 <body class="bg-stone-950 text-stone-200 overflow-hidden">
@@ -50,6 +61,17 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm text-stone-400 mb-1">出生日期</label>
+                    <div class="relative">
+                        <input type="date" id="input-birthday"
+                            class="w-full bg-stone-900 border border-stone-600 rounded p-2 focus:border-green-500 focus:outline-none text-white pl-10 font-tech">
+                        <div class="absolute left-3 top-2.5 text-stone-500">
+                            <i class="fa-solid fa-cake-candles text-[16px]"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
                     <label class="block text-sm text-stone-400 mb-1">預計入伍日期</label>
                     <div class="relative">
                         <input type="date" id="input-date"
@@ -65,8 +87,8 @@
                     <select id="input-role"
                         class="w-full bg-stone-900 border border-stone-600 rounded p-2 focus:border-green-500 focus:outline-none">
                         <option value="regular">常備兵</option>
-                        <option value="rd_substitute">研發替代役</option>
-                        <option value="disability">身心障礙者</option>
+                        <option value="rd_substitute">替代役</option>
+                        <option value="supplementary_12days">補充兵(12天)</option>
                     </select>
                 </div>
 
@@ -92,6 +114,12 @@
                         <input type="number" id="input-weight" value="70"
                             class="w-full bg-stone-900 border border-stone-600 rounded p-2 font-tech">
                     </div>
+                </div>
+
+                <div class="flex items-center gap-2 p-2 bg-stone-900/50 rounded border border-stone-800">
+                    <input type="checkbox" id="input-meds"
+                        class="w-4 h-4 rounded border-stone-600 bg-stone-900 text-green-600 focus:ring-green-500">
+                    <label for="input-meds" class="text-sm text-stone-400 cursor-pointer select-none">我有使用慢性藥物習慣</label>
                 </div>
 
 
@@ -127,7 +155,7 @@
                 <button data-tab="training"
                     class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-stone-400 hover:bg-stone-800 hover:text-stone-200">
                     <i class="fa-solid fa-dumbbell text-[20px]"></i>
-                    <span class="font-bold text-sm">體能訓練</span>
+                    <span class="font-bold text-sm">今日課表</span>
                 </button>
                 <button data-tab="inventory"
                     class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-stone-400 hover:bg-stone-800 hover:text-stone-200">
@@ -149,21 +177,56 @@
                     <i class="fa-solid fa-map-location-dot text-[20px]"></i>
                     <span class="font-bold text-sm">新訓地點</span>
                 </button>
+                <button data-tab="rhapsody"
+                    class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-stone-400 hover:bg-stone-800 hover:text-stone-200">
+                    <i class="fa-solid fa-music text-[20px]"></i>
+                    <span class="font-bold text-sm">大兵狂想曲</span>
+                </button>
             </nav>
 
             <div class="p-4 border-t border-stone-800 bg-stone-900/50">
-                <div id="user-info-sidebar" class="hidden flex items-center gap-3">
-                    <div class="bg-green-800 p-2 rounded-full text-white w-9 h-9 flex items-center justify-center">
-                        <i class="fa-solid fa-user text-[20px]"></i>
+                <div id="user-info-sidebar" class="hidden flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div
+                            class="bg-green-800 p-2 rounded-full text-white w-9 h-9 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-user text-[16px]"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p id="sidebar-name" class="text-sm font-bold truncate text-white">王小明</p>
+                            <p id="sidebar-role" class="text-xs text-green-500 truncate">常備役</p>
+                        </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p id="sidebar-name" class="text-sm font-bold truncate text-white">王小明</p>
-                        <p id="sidebar-role" class="text-xs text-green-500 truncate">常備役</p>
+                    <div class="relative">
+                        <button id="btn-settings-sidebar"
+                            class="text-stone-500 hover:text-white w-8 h-8 rounded-full hover:bg-stone-800 transition-all flex items-center justify-center"
+                            title="設定">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                        <!-- Settings Popover -->
+                        <div id="settings-menu-sidebar"
+                            class="hidden absolute bottom-12 left-0 w-48 bg-stone-800 border border-stone-700 rounded-lg shadow-xl overflow-hidden z-50">
+                            <button id="btn-edit-profile-sidebar"
+                                class="w-full text-left px-4 py-3 text-sm text-stone-300 hover:bg-stone-700 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square"></i> 修改資料
+                            </button>
+                            <button id="btn-game-backpack-sidebar"
+                                class="w-full text-left px-4 py-3 text-sm text-stone-300 hover:bg-stone-700 hover:text-white transition-colors flex items-center gap-2 border-t border-stone-700">
+                                <i class="fa-solid fa-gamepad"></i> 小遊戲背包
+                            </button>
+                            <button id="btn-delete-account-sidebar"
+                                class="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-colors flex items-center gap-2 border-t border-stone-700">
+                                <i class="fa-solid fa-user-xmark"></i> 刪除帳號
+                            </button>
+                            <button id="btn-logout-sidebar"
+                                class="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-colors flex items-center gap-2 border-t border-stone-700">
+                                <i class="fa-solid fa-right-from-bracket"></i> 登出
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <button id="btn-login-sidebar"
                     class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2 rounded text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-right-to-bracket text-[16px]"></i> 點此登入
+                    <i class="fa-solid fa-address-card"></i> 建立兵籍資料
                 </button>
             </div>
         </aside>
@@ -205,8 +268,8 @@
                             <i class="fa-solid fa-pen-to-square text-[12px]"></i> <span
                                 class="hidden md:inline">修改資料</span>
                         </button>
-                        <button id="btn-logout"
-                            class="text-xs bg-red-900/30 hover:bg-red-900/50 border border-red-800 px-3 py-1.5 rounded flex items-center gap-1 transition-colors text-red-200">
+                        <button
+                            class="btn-logout text-xs bg-red-900/30 hover:bg-red-900/50 border border-red-800 px-3 py-1.5 rounded flex items-center gap-1 transition-colors text-red-200">
                             <i class="fa-solid fa-right-from-bracket text-[12px]"></i> <span
                                 class="hidden md:inline">登出</span>
                         </button>
@@ -303,7 +366,7 @@
                                         <div class="flex justify-between items-end mb-4 border-b border-stone-800 pb-2">
                                             <div class="text-2xl font-bold text-white font-tech"
                                                 id="calendar-month-year">2024 / 01</div>
-                                            <div class="text-xs text-stone-500">入伍日程表</div>
+                                            <div class="text-xs text-stone-500">入營日程表</div>
                                         </div>
 
                                         <!-- Calendar Grid -->
@@ -325,7 +388,7 @@
                                             <div class="flex items-center gap-1"><span
                                                     class="w-2 h-2 rounded-full bg-green-500"></span> 今日</div>
                                             <div class="flex items-center gap-1"><span
-                                                    class="w-2 h-2 rounded-full bg-red-600"></span> 入伍日</div>
+                                                    class="w-2 h-2 rounded-full bg-red-600"></span> 入營日</div>
                                         </div>
 
                                         <!-- Daily Task Progress Bar -->
@@ -418,7 +481,7 @@
                                     <div class="flex justify-between items-center mb-4">
                                         <h3 class="font-bold text-white flex items-center gap-2 text-lg">
                                             <i class="fa-solid fa-square-check text-[20px] text-green-500"></i>
-                                            <span id="tasks-title">入伍倒數任務</span>
+                                            <span id="tasks-title">入營倒數任務</span>
                                         </h3>
                                     </div>
 
@@ -551,211 +614,286 @@
                             </h3>
                             <p class="text-stone-400 mb-8">查詢各新訓中心的特色、交通與注意事項。</p>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <!-- Card: 成功嶺 -->
-                                <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+                                <!-- Left Column: Camp List -->
+                                <div class="lg:col-span-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                                    <!-- Card: 成功嶺 -->
                                     <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">成功嶺 (104旅/302旅)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
                                         </div>
-                                        <span class="text-6xl z-10">🐅</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            台中烏日</div>
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    台中烏日</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">大魔王</span>
+                                                    <span
+                                                        class="text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded">伙食普通</span>
+                                                    <span
+                                                        class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">台中烏日</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    全台最大新訓中心，腹地廣大，去哪都要走很久。冬天風大，夏天悶熱。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-train"></i> 高鐵台中站 / 台鐵成功站
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">成功嶺 (104旅/302旅)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">大魔王</span>
-                                            <span
-                                                class="text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded">伙食普通</span>
+
+                                    <!-- Card: 金六結 -->
+                                    <div
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">金六結 (153旅)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
                                         </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            全台最大新訓中心，腹地廣大，去哪都要走很久。冬天風大，夏天悶熱。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-train"></i> 高鐵台中站 / 台鐵成功站
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+                                                <span class="text-6xl z-10">🌧️</span>
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    宜蘭</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded">多雨潮濕</span>
+                                                    <span
+                                                        class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">快樂金六結(?)</span>
+                                                    <span
+                                                        class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">宜蘭</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    號稱「快樂金六結」，但實際硬度看連隊。冬天冷到懷疑人生，雨衣是第二層皮膚。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-bus"></i> 宜蘭轉運站
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card: 斗煥坪 -->
+                                    <div
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">斗煥坪 (206旅)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
+                                        </div>
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+                                                <span class="text-6xl z-10">😊</span>
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    苗栗頭份</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">快樂斗煥坪</span>
+                                                    <span
+                                                        class="text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded">伙食佳</span>
+                                                    <span
+                                                        class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">苗栗頭份</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    傳說中的新手村福利版。伙食評價不錯，營區不大，生活機能相對便利。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-bus"></i> 竹南火車站轉乘
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card: 關西 -->
+                                    <div
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">關西營區 (206旅)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
+                                        </div>
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+                                                <span class="text-6xl z-10">⛰️</span>
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    新竹關西</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-orange-900/40 text-orange-200 px-2 py-1 rounded">好漢坡</span>
+                                                    <span
+                                                        class="text-xs bg-orange-900/40 text-orange-200 px-2 py-1 rounded">新竹關西</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    以「好漢坡」聞名，每天爬坡練腿力。營舍較舊，但風景不錯(如果還有心情看的話)。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-taxi"></i> 新竹客運 / 計程車
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card: 官田 -->
+                                    <div
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">官田營區 (203旅)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
+                                        </div>
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+                                                <span class="text-6xl z-10">🏖️</span>
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    台南官田</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">官田渡假村</span>
+                                                    <span
+                                                        class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">台南官田</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    南部的新手天堂，被戲稱「渡假村」。營舍新穎，設備齊全，打靶場就在營區內。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-train"></i> 隆田火車站
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card: 中坑 -->
+                                    <div
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">中坑營區 (257旅)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
+                                        </div>
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+                                                <span class="text-6xl z-10">🔥</span>
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    嘉義大林</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">精北地獄</span>
+                                                    <span
+                                                        class="text-xs bg-orange-900/40 text-orange-200 px-2 py-1 rounded">精南烤肉</span>
+                                                    <span
+                                                        class="text-xs bg-orange-900/40 text-orange-200 px-2 py-1 rounded">嘉義大林</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    「精北」走去靶場要翻山越嶺，「精南」稍微好一點。夏天嘉義的太陽不是開玩笑的。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-train"></i> 大林火車站
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card: 屏東龍泉 -->
+                                    <div
+                                        class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
+                                        <div class="flex justify-between items-center p-5 cursor-pointer hover:bg-stone-700/50 transition-colors"
+                                            onclick="toggleLocation(this)">
+                                            <h4 class="font-bold text-lg text-white">屏東龍泉 (海陸)</h4>
+                                            <i
+                                                class="fa-solid fa-chevron-down text-stone-400 transition-transform duration-300"></i>
+                                        </div>
+                                        <div class="location-details hidden border-t border-stone-700 animate-fade-in">
+                                            <!-- <div
+                                                class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
+                                                </div>
+                                                <span class="text-6xl z-10">⚓</span>
+                                                <div
+                                                    class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
+                                                    屏東內埔</div>
+                                            </div> -->
+                                            <div class="p-5">
+                                                <div class="flex flex-wrap gap-2 mb-4">
+                                                    <span
+                                                        class="text-xs bg-blue-900/40 text-blue-200 px-2 py-1 rounded">海陸</span>
+                                                    <span
+                                                        class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">太陽很毒</span>
+                                                    <span
+                                                        class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">屏東內埔</span>
+                                                </div>
+                                                <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                                                    海軍陸戰隊新訓中心。雖然現在沒那麼操了，但屏東的熱情陽光依然會讓你脫層皮。
+                                                </p>
+                                                <div class="text-sm text-green-500 flex items-center gap-1">
+                                                    <i class="fa-solid fa-train"></i> 屏東火車站轉客運
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Card: 金六結 -->
+                                <!-- Right Column: Google Map -->
                                 <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
-                                    <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
-                                        </div>
-                                        <span class="text-6xl z-10">🌧️</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            宜蘭</div>
-                                    </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">金六結 (153旅)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded">多雨潮濕</span>
-                                            <span
-                                                class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">快樂金六結(?)</span>
-                                        </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            號稱「快樂金六結」，但實際硬度看連隊。冬天冷到懷疑人生，雨衣是第二層皮膚。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-bus"></i> 宜蘭轉運站
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card: 斗煥坪 -->
-                                <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
-                                    <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
-                                        </div>
-                                        <span class="text-6xl z-10">😊</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            苗栗頭份</div>
-                                    </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">斗煥坪 (206旅)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">快樂斗煥坪</span>
-                                            <span
-                                                class="text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded">伙食佳</span>
-                                        </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            傳說中的新手村福利版。伙食評價不錯，營區不大，生活機能相對便利。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-bus"></i> 竹南火車站轉乘
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card: 關西 -->
-                                <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
-                                    <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
-                                        </div>
-                                        <span class="text-6xl z-10">⛰️</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            新竹關西</div>
-                                    </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">關西營區 (206旅)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-orange-900/40 text-orange-200 px-2 py-1 rounded">好漢坡</span>
-                                        </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            以「好漢坡」聞名，每天爬坡練腿力。營舍較舊，但風景不錯(如果還有心情看的話)。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-taxi"></i> 新竹客運 / 計程車
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card: 官田 -->
-                                <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
-                                    <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
-                                        </div>
-                                        <span class="text-6xl z-10">🏖️</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            台南官田</div>
-                                    </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">官田營區 (203旅)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-green-900/40 text-green-200 px-2 py-1 rounded">官田渡假村</span>
-                                        </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            南部的新手天堂，被戲稱「渡假村」。營舍新穎，設備齊全，打靶場就在營區內。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-train"></i> 隆田火車站
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card: 中坑 -->
-                                <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
-                                    <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
-                                        </div>
-                                        <span class="text-6xl z-10">🔥</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            嘉義大林</div>
-                                    </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">中坑營區 (257旅)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">精北地獄</span>
-                                            <span
-                                                class="text-xs bg-orange-900/40 text-orange-200 px-2 py-1 rounded">精南烤肉</span>
-                                        </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            「精北」走去靶場要翻山越嶺，「精南」稍微好一點。夏天嘉義的太陽不是開玩笑的。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-train"></i> 大林火車站
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Card: 屏東龍泉 -->
-                                <div
-                                    class="bg-stone-800 rounded-lg overflow-hidden border border-stone-700 hover:border-green-500 transition-colors group">
-                                    <div
-                                        class="h-40 bg-stone-700 flex items-center justify-center relative overflow-hidden">
-                                        <div
-                                            class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors">
-                                        </div>
-                                        <span class="text-6xl z-10">⚓</span>
-                                        <div
-                                            class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded">
-                                            屏東內埔</div>
-                                    </div>
-                                    <div class="p-5">
-                                        <h4 class="font-bold text-lg text-white mb-2">屏東龍泉 (海陸)</h4>
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <span
-                                                class="text-xs bg-blue-900/40 text-blue-200 px-2 py-1 rounded">海陸</span>
-                                            <span
-                                                class="text-xs bg-red-900/40 text-red-200 px-2 py-1 rounded">太陽很毒</span>
-                                        </div>
-                                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
-                                            海軍陸戰隊新訓中心。雖然現在沒那麼操了，但屏東的熱情陽光依然會讓你脫層皮。
-                                        </p>
-                                        <div class="text-sm text-green-500 flex items-center gap-1">
-                                            <i class="fa-solid fa-train"></i> 屏東火車站轉客運
-                                        </div>
-                                    </div>
+                                    class="lg:col-span-2 bg-stone-800 rounded-lg overflow-hidden border border-stone-700 h-full sticky top-0 shadow-xl">
+                                    <iframe
+                                        src="https://www.google.com/maps/d/u/0/embed?mid=16N88jPdRGWanJAVlVUWoE1moYqVvi1A&ehbc=2E312F&noprof=1"
+                                        width="100%" height="100%" style="border:0;" allowfullscreen=""
+                                        loading="lazy"></iframe>
                                 </div>
                             </div>
                         </div>
@@ -786,7 +924,7 @@
                             </div>
 
                             <div id="training-content">
-                                <p class="text-sm text-stone-400 mb-6">入伍前 30 天開始執行，讓你新訓第一週就能跟上部隊節奏。</p>
+                                <p class="text-sm text-stone-400 mb-6">入營前 30 天開始執行，讓你新訓第一週就能跟上部隊節奏。</p>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <!-- Day 1 -->
                                     <div
@@ -798,17 +936,14 @@
                                             <span
                                                 class="text-stone-300 font-bold group-hover:text-white">適應期：核心啟動</span>
                                         </div>
-                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
-                                            <iframe width="100%" height="100%"
-                                                src="https://www.youtube.com/embed/l2w2zn_-bQk?si=DnZaEg2XAAdp8zcu"
-                                                title="YouTube video player" frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerpolicy="strict-origin-when-cross-origin"
-                                                allowfullscreen></iframe>
-                                        </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed">伏地挺身 10下 x 3組、棒式
-                                            30秒
+                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">仰臥起坐 10下 x 3組、棒式30秒
                                         </p>
+                                        <div class="flex justify-end">
+                                            <button
+                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                <i class="fa-solid fa-check"></i> 確認
+                                            </button>
+                                        </div>
                                     </div>
                                     <!-- Day 2 -->
                                     <div
@@ -820,9 +955,23 @@
                                             <span
                                                 class="text-stone-300 font-bold group-hover:text-white">適應期：下肢肌力</span>
                                         </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed">深蹲 15下 x 3組、開合跳
+                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
+                                            <iframe width="100%" height="100%"
+                                                src="https://www.youtube.com/embed/m0x0fbKkrUI?si=8eC-pibtE6IgmG6G"
+                                                title="YouTube video player" frameborder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerpolicy="strict-origin-when-cross-origin"
+                                                allowfullscreen></iframe>
+                                        </div>
+                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">深蹲 15下 x 3組、開合跳
                                             50下
                                         </p>
+                                        <div class="flex justify-end">
+                                            <button
+                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                <i class="fa-solid fa-check"></i> 確認
+                                            </button>
+                                        </div>
                                     </div>
                                     <!-- Day 3 -->
                                     <div
@@ -834,8 +983,22 @@
                                             <span
                                                 class="text-stone-300 font-bold group-hover:text-white">強化期：心肺耐力</span>
                                         </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed">慢跑 15分鐘 (配速 7分速)
+                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
+                                            <iframe width="100%" height="100%"
+                                                src="https://www.youtube.com/embed/YEV2xpEtlmI?si=WgTUTbecG9q3uqhy"
+                                                title="YouTube video player" frameborder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerpolicy="strict-origin-when-cross-origin"
+                                                allowfullscreen></iframe>
+                                        </div>
+                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">慢跑 15分鐘 (配速 7分速)
                                         </p>
+                                        <div class="flex justify-end">
+                                            <button
+                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                <i class="fa-solid fa-check"></i> 確認
+                                            </button>
+                                        </div>
                                     </div>
                                     <!-- Day 4 -->
                                     <div
@@ -847,9 +1010,22 @@
                                             <span
                                                 class="text-stone-300 font-bold group-hover:text-white">強化期：上肢推力</span>
                                         </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed">伏地挺身 15下 x 3組、板凳撐體
-                                            10下
+                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
+                                            <iframe width="100%" height="100%"
+                                                src="https://www.youtube.com/embed/l2w2zn_-bQk?si=DnZaEg2XAAdp8zcu"
+                                                title="YouTube video player" frameborder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerpolicy="strict-origin-when-cross-origin"
+                                                allowfullscreen></iframe>
+                                        </div>
+                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">伏地挺身 15下 x 3組、臥推10下
                                         </p>
+                                        <div class="flex justify-end">
+                                            <button
+                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                <i class="fa-solid fa-check"></i> 確認
+                                            </button>
+                                        </div>
                                     </div>
                                     <!-- Day 5 -->
                                     <div
@@ -861,8 +1037,22 @@
                                             <span
                                                 class="text-stone-300 font-bold group-hover:text-white">恢復期：伸展放鬆</span>
                                         </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed">全身靜態伸展 20分鐘，早點睡覺
+                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
+                                            <iframe width="100%" height="100%"
+                                                src="https://www.youtube.com/embed/cx3NvVg_1qk?si=_qB3St0J9yXvm0Eh"
+                                                title="YouTube video player" frameborder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerpolicy="strict-origin-when-cross-origin"
+                                                allowfullscreen></iframe>
+                                        </div>
+                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">全身靜態伸展 20分鐘，早點睡覺
                                         </p>
+                                        <div class="flex justify-end">
+                                            <button
+                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                                                <i class="fa-solid fa-check"></i> 確認
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -876,30 +1066,25 @@
                                 <i class="fa-solid fa-bag-shopping text-[24px] text-green-500"></i> 入伍背包檢核
                             </h3>
 
-                            <div id="inventory-guest-msg"
-                                class="mb-6 bg-yellow-900/30 border border-yellow-700 p-4 rounded-lg text-sm text-yellow-400 flex items-center gap-2">
-                                <i class="fa-solid fa-circle-info text-[18px]"></i> 訪客模式無法儲存清單進度
+
+
+
+
+                            <!-- Required Items Section -->
+                            <h4 class="font-bold text-white text-lg mb-3 mt-6 border-l-4 border-red-600 pl-3">必備物品
+                            </h4>
+                            <div id="inventory-list-required"
+                                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <!-- Required items injected here -->
                             </div>
 
-                            <div id="inventory-quick-add" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                <div class="bg-stone-800 p-4 rounded-lg text-center border border-stone-700 cursor-pointer hover:bg-stone-700 hover:border-green-500 transition-all group"
-                                    onclick="addQuickItem('life')">
-                                    <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">⌚
-                                    </div>
-                                    <div class="font-bold text-white">一鍵採購生活組</div>
-                                    <div class="text-xs text-stone-500 mt-1">含手錶、沐浴乳、爽身粉</div>
-                                </div>
-                                <div class="bg-stone-800 p-4 rounded-lg text-center border border-stone-700 cursor-pointer hover:bg-stone-700 hover:border-green-500 transition-all group"
-                                    onclick="addQuickItem('med')">
-                                    <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">💊
-                                    </div>
-                                    <div class="font-bold text-white">申請慢性病藥物</div>
-                                    <div class="text-xs text-stone-500 mt-1">加入診斷證明書至清單</div>
-                                </div>
-                            </div>
-
-                            <div id="inventory-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                <!-- Items will be injected by JS -->
+                            <!-- Optional Items Section -->
+                            <h4 class="font-bold text-white text-lg mb-3 mt-8 border-l-4 border-stone-500 pl-3">非必備
+                                /
+                                建議物品</h4>
+                            <div id="inventory-list-optional"
+                                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <!-- Optional items injected here -->
                             </div>
 
                             <div
@@ -950,29 +1135,37 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="bg-stone-900 p-6 rounded-lg shadow-lg">
                                 <h3 class="font-bold text-white mb-6 flex items-center gap-2 text-xl">
-                                    <i class="fa-solid fa-file-lines text-[24px] text-green-500"></i> 役政文件中心
+                                    <i class="fa-solid fa-file-lines text-[24px] text-green-500"></i> 役政中心
                                 </h3>
                                 <div class="space-y-3">
-                                    <div
-                                        class="flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
-                                        <span class="text-stone-300 group-hover:text-white">緩徵申請書下載</span>
-                                        <i
-                                            class="fa-solid fa-chevron-right text-[20px] text-stone-500 group-hover:text-white"></i>
+                                    <div data-doc="units"
+                                        class="btn-doc w-full bg-stone-800 hover:bg-stone-700 border border-stone-700 p-4 rounded-lg flex items-center justify-between group transition-colors cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div class="bg-blue-900/30 p-2 rounded text-blue-400">
+                                                <i class="fa-solid fa-building-columns"></i>
+                                            </div>
+                                            <div class="text-left">
+                                                <div class="text-stone-200 font-bold group-hover:text-white">全國役政單位資料
+                                                </div>
+                                                <div class="text-stone-500 text-xs text-left">聯絡地址、電話一覽表</div>
+                                            </div>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-right text-stone-500 group-hover:text-white"></i>
                                     </div>
-                                    <div
-                                        class="flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
+                                    <div data-doc="recheck"
+                                        class="btn-doc flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
                                         <span class="text-stone-300 group-hover:text-white">體位複檢標準表</span>
                                         <i
                                             class="fa-solid fa-chevron-right text-[20px] text-stone-500 group-hover:text-white"></i>
                                     </div>
-                                    <div
-                                        class="flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
+                                    <div data-doc="contact"
+                                        class="btn-doc flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
                                         <span class="text-stone-300 group-hover:text-white">各縣市役政單位通訊錄</span>
                                         <i
                                             class="fa-solid fa-chevron-right text-[20px] text-stone-500 group-hover:text-white"></i>
                                     </div>
-                                    <div
-                                        class="flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
+                                    <div data-doc="rights"
+                                        class="btn-doc flex justify-between items-center p-4 bg-stone-800 rounded-lg hover:bg-stone-700 cursor-pointer border border-stone-700 hover:border-stone-500 transition-colors group">
                                         <span class="text-stone-300 group-hover:text-white">軍人權益懶人包</span>
                                         <i
                                             class="fa-solid fa-chevron-right text-[20px] text-stone-500 group-hover:text-white"></i>
@@ -995,6 +1188,15 @@
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: RHAPSODY -->
+                    <div id="view-rhapsody" class="view-section hidden">
+                        <div class="flex flex-col items-center justify-center h-[calc(100vh-140px)] text-stone-500">
+                            <i class="fa-solid fa-music text-[64px] mb-4 opacity-50"></i>
+                            <h2 class="text-2xl font-bold mb-2">大兵狂想曲</h2>
+                            <p>這裡目前空空如也，敬請期待！</p>
                         </div>
                     </div>
 
@@ -1205,6 +1407,34 @@
                 </button>
             </nav>
 
+        </div>
+    </div>
+
+    <!-- Docs Modal -->
+    <div id="modal-docs"
+        class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 font-mono backdrop-blur-sm hidden">
+        <div
+            class="max-w-2xl w-full bg-stone-800 rounded-lg border-2 border-green-700 shadow-2xl overflow-hidden animate-fade-in relative">
+            <button id="btn-close-docs"
+                class="absolute right-4 top-4 text-stone-400 hover:text-white transition-colors z-10">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <div class="bg-stone-900/50 p-6 border-b border-stone-700">
+                <h3 id="docs-modal-title" class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-lines text-green-500"></i>
+                    <span>文件標題</span>
+                </h3>
+            </div>
+            <div class="p-8 text-center space-y-6">
+                <p id="docs-modal-content" class="text-stone-300 leading-relaxed">
+                    文件內容說明...
+                </p>
+                <a id="docs-modal-link" href="#" target="_blank"
+                    class="inline-flex items-center gap-2 text-green-500 hover:text-green-400 font-bold transition-colors text-lg border-b border-green-500/50 hover:border-green-400 pb-1">
+                    <i class="fa-solid fa-link"></i>
+                    <span>前往官方網站</span>
+                </a>
+            </div>
         </div>
     </div>
 

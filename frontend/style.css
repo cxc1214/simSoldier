@@ -1,84 +1,180 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@charset "UTF-8";
+
+:root {
+    /* Color Palette - Stone (Dark Theme Base) */
+    --c-stone-950: #0c0a09;
+    --c-stone-900: #1c1917;
+    --c-stone-800: #292524;
+    --c-stone-700: #44403c;
+    --c-stone-600: #57534e;
+    --c-stone-500: #78716c;
+    --c-stone-400: #a8a29e;
+    --c-stone-300: #d6d3d1;
+    --c-stone-200: #e7e5e4;
+    --c-white: #ffffff;
+
+    /* Color Palette - Green (Accents) */
+    --c-green-900: #14532d;
+    --c-green-600: #16a34a;
+    --c-green-500: #22c55e;
+    --c-green-400: #4ade80;
+
+    /* Semantic Colors */
+    --bg-base: var(--c-stone-950);
+    --bg-sidebar: var(--c-stone-950);
+    --bg-card: var(--c-stone-900);
+    --bg-input: var(--c-stone-950);
+
+    --border-base: var(--c-stone-800);
+    --border-light: var(--c-stone-700);
+
+    --text-main: var(--c-stone-200);
+    --text-muted: var(--c-stone-400);
+    --text-accent: var(--c-green-400);
+}
 
 body {
-    font-family: 'Noto Sans TC', sans-serif;
+    font-family: "Microsoft JhengHei", "Heiti TC", sans-serif !important;
+    background-color: var(--bg-base);
+    color: var(--text-main);
 }
 
-.font-tech {
-    font-family: 'Share Tech Mono', monospace;
+/* Ensure Tailwind fonts don't override it if applied specifically */
+.font-sans {
+    font-family: "Microsoft JhengHei", "Heiti TC", sans-serif !important;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
+/* --- Layout --- */
+.app-wrapper {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--bg-base);
 }
 
-::-webkit-scrollbar-track {
-    background: #1c1917;
+.sidebar {
+    width: 16rem;
+    /* w-64 */
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-base);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #44403c;
-    border-radius: 4px;
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #57534e;
+.main-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    /* p-6 */
 }
 
-/* Glow Effects */
-.glow-red {
-    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
-}
-
-.glow-green {
-    text-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
-}
-
-.glow-orange {
-    text-shadow: 0 0 10px rgba(249, 115, 22, 0.5), 0 0 20px rgba(249, 115, 22, 0.3);
-}
-
-/* Calendar Styles */
-.calendar-day {
-    aspect-ratio: 1;
+/* --- Components: Sidebar --- */
+.sidebar-header {
+    padding: 1.5rem;
+    /* p-6 */
+    border-bottom: 1px solid var(--border-base);
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    color: #a8a29e;
-    /* stone-400 */
-    cursor: default;
+    gap: 0.75rem;
+    /* gap-3 */
+}
+
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    /* p-4 */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    /* space-y-2 -> gap-2 */
+}
+
+.nav-btn {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    /* px-4 py-3 */
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: 500;
+    color: var(--c-stone-500);
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    /* gap-3 */
 }
 
-.calendar-day:hover {
-    background-color: #292524;
-    /* stone-800 */
-    color: white;
+.nav-btn:hover {
+    background-color: rgba(68, 64, 60, 0.3);
+    /* stone-700/30 */
+    color: var(--c-stone-300);
 }
 
-.calendar-day.today {
-    background-color: rgba(34, 197, 94, 0.2);
-    /* green-500/20 */
-    color: #4ade80;
-    /* green-400 */
-    border: 1px solid rgba(34, 197, 94, 0.5);
-    font-weight: bold;
+.nav-btn.active {
+    background-color: rgba(20, 83, 45, 0.3);
+    /* green-900/30 */
+    color: var(--text-accent);
+    border: 1px solid rgba(20, 83, 45, 0.5);
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 }
 
-.calendar-day.enlist-day {
-    background-color: rgba(220, 38, 38, 0.2);
-    /* red-600/20 */
-    color: #f87171;
-    /* red-400 */
-    border: 1px solid rgba(220, 38, 38, 0.5);
-    font-weight: bold;
-    box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+.sidebar-footer {
+    padding: 1rem;
+    /* p-4 */
+    border-top: 1px solid var(--border-base);
 }
 
-.calendar-day.past {
-    color: #44403c;
-    /* stone-700 */
-    pointer-events: none;
+/* --- Components: Header --- */
+.app-header {
+    background-color: rgba(12, 10, 9, 0.8);
+    /* stone-950/80 */
+    backdrop-filter: blur(4px);
+    border-bottom: 1px solid var(--border-base);
+    padding: 1rem 1.5rem;
+    /* px-6 py-4 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* --- Components: Cards --- */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-base);
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    padding: 1.5rem;
+    /* p-6 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+    border-color: var(--c-stone-600);
+}
+
+/* --- Components: Buttons --- */
+.btn-toggle {
+    background-color: var(--c-stone-800);
+    /* hover handled in JS or specific classes */
+}
+
+/* --- Typography --- */
+.font-tech {
+    font-family: 'Share Tech Mono', monospace;
 }
