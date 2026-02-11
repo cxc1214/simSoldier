@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -15,7 +15,7 @@ class User(Base):
     height = Column(Integer) # Height in cm
     weight = Column(Integer) # Weight in kg
     entrance_date = Column(Date) # Date of entrance to the Real Madrid Academy
-    do_have_chronic_medications = Column(bool, default=False) # Whether the user has chronic medications
+    do_have_chronic_medications = Column(Boolean, default=False) # Whether the user has chronic medications
     hashed_password = Column(String)
 
 class Role(Base):

@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data:Z  # Added :Z for SELinux
+      - ./backend/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

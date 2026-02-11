@@ -6,22 +6,6 @@ import contextlib
 
 from . import models, schemas, database, auth
 
-"""
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True) # Name
-    role = Column(Integer, ForeignKey("roles.id")) # Role ID
-    game_currency = Column(Integer, default=0)
-    date_of_birth = Column(Date)
-    date_of_registration = Column(DateTime(timezone=True), server_default=func.now())
-    height = Column(Integer) # Height in cm
-    weight = Column(Integer) # Weight in kg
-    entrance_date = Column(Date) # Date of entrance to the Real Madrid Academy
-    do_have_chronic_medications = Column(bool, default=False) # Whether the user has chronic medications
-    hashed_password = Column(String)
-"""
 # Dependency to check/create items on startup
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -113,6 +97,7 @@ async def update_user_me(user_update: schemas.UserUpdate, current_user: models.U
         current_user.do_have_chronic_medications = user_update.do_have_chronic_medications
     if user_update.password:
         current_user.hashed_password = auth.get_password_hash(user_update.password)
+    
     db.commit()
     db.refresh(current_user)
     return current_user

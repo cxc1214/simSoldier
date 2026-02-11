@@ -57,8 +57,10 @@ def run_tests():
         "date_of_birth": "1999-12-31",
         "role": 1,
         "height": 180,
-        "weight": 75
-    }
+        "weight": 75,
+        "entrance_date": "2022-09-01",
+        "do_have_chronic_medications":True
+        }
     try:
         response = requests.post(f"{BASE_URL}/api/user_edit", json=edit_data, headers=headers)
         if response.status_code != 200:
@@ -75,6 +77,8 @@ def run_tests():
         if updated_user.get("weight") != 75:
             print("Weight not updated")
             return False
+        
+        
     except Exception as e:
         print(f"Edit exception: {e}")
         return False
