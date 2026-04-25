@@ -48,4 +48,4 @@ class TrainingRecord(Base):
     duration_seconds = Column(Integer)
     is_valid = Column(Boolean, default=True)
 
-    user = relationship("User")
+    user = relationship("User")
