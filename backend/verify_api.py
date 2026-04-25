@@ -82,7 +82,18 @@ def run_tests():
     except Exception as e:
         print(f"Edit exception: {e}")
         return False
-
+    # 5 chat    
+    print("\n5. Testing Chat...")
+    try:
+        response = requests.post(f"{BASE_URL}/api/chat", headers=headers, json={"question": "How many days of PTO do employees get?"})
+        if response.status_code != 200:
+            print(f"Chat failed: {response.text}")
+            return False
+        print(f"Chat response: {response.text}")
+    except Exception as e:
+        print(f"Chat exception: {e}")
+        return False
+        
     # 4. Logout (Client side really, but checking endpoint)
     print("\n4. Testing Logout...")
     try:

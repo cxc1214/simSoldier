@@ -1,10 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import func
 from datetime import timedelta
 import contextlib
+import csv
+import os
+import uuid
+from datetime import datetime
 
-from . import models, schemas, database, auth
+from . import models, schemas, database, auth, chat
 
 # Dependency to check/create items on startup
 @contextlib.asynccontextmanager
@@ -12,16 +18,28 @@ async def lifespan(app: FastAPI):
     # Startup logic
     models.Base.metadata.create_all(bind=database.engine)
     
-    # Check if we need to seed a user
+    # Check if we need to seed roles
     db = database.SessionLocal()
     try:
+        if db.query(models.Role).count() == 0:
+            print("Seeding roles...")
+            roles = [
+                models.Role(id=1, name="Soldier"),
+                models.Role(id=2, name="Commander"),
+                models.Role(id=3, name="Officer")
+            ]
+            db.add_all(roles)
+            db.commit()
+            print("Roles seeded.")
+
+        # Check if we need to seed a user
         user = db.query(models.User).first()
         if not user:
             print("Seeding initial user...")
             hashed_pwd = auth.get_password_hash("password123")
             new_user = models.User(
                 username="testuser",
-                role=1,  # Assuming role ID 1 is a default role
+                role=1,  # Assuming role ID 1 (Soldier) is the default role
                 game_currency=1000,
                 date_of_birth="2000-01-01",
                 weight=70,
@@ -33,6 +51,32 @@ async def lifespan(app: FastAPI):
             db.add(new_user)
             db.commit()
             print("Initial user 'testuser' created with password 'password123'.")
+        
+        # Check if we need to seed quiz questions
+        if db.query(models.QuizQuestion).count() == 0:
+            csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "問題集.csv")
+            if os.path.exists(csv_path):
+                print(f"Seeding quiz questions from {csv_path}...")
+                with open(csv_path, mode='r', encoding='utf-8') as file:
+                    reader = csv.DictReader(file)
+                    questions = []
+                    for row in reader:
+                        q = models.QuizQuestion(
+                            question=row.get('question', ''),
+                            option_a=row.get('option_a', ''),
+                            option_b=row.get('option_b', ''),
+                            option_c=row.get('option_c', ''),
+                            option_d=row.get('option_d', ''),
+                            correct_option=row.get('answer', ''),
+                            explanation=row.get('explanation', ''),
+                            source=row.get('source', '')
+                        )
+                        questions.append(q)
+                    db.add_all(questions)
+                    db.commit()
+                print(f"Successfully seeded {len(questions)} quiz questions.")
+            else:
+                print(f"Warning: Quiz CSV file not found at {csv_path}")
     finally:
         db.close()
     
@@ -40,6 +84,15 @@ async def lifespan(app: FastAPI):
     # Shutdown logic if any
 
 app = FastAPI(lifespan=lifespan)
+
+# Setup CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 @app.post("/api/register", response_model=schemas.UserResponse)
 async def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
@@ -97,6 +150,11 @@ async def update_user_me(user_update: schemas.UserUpdate, current_user: models.U
         current_user.do_have_chronic_medications = user_update.do_have_chronic_medications
     if user_update.password:
         current_user.hashed_password = auth.get_password_hash(user_update.password)
+        
+    if user_update.username and user_update.username != current_user.username:
+        if db.query(models.User).filter(models.User.username == user_update.username).first():
+            raise HTTPException(status_code=400, detail="此姓名(帳號)已被使用")
+        current_user.username = user_update.username
     
     db.commit()
     db.refresh(current_user)
@@ -105,6 +163,74 @@ async def update_user_me(user_update: schemas.UserUpdate, current_user: models.U
 @app.post("/api/logout")
 async def logout():
     return {"message": "Successfully logged out. Please unset the token on the client side."}
+
+@app.post("/api/chat")
+async def chat_endpoint(request: schemas.ChatRequest, current_user: models.User = Depends(auth.get_current_user)):
+    return chat.ask_gemini(current_user, request.question)
+
+@app.get("/api/quiz/random", response_model=list[schemas.QuizQuestionResponse])
+async def get_random_quiz(limit: int = 5, db: Session = Depends(database.get_db)):
+    questions = db.query(models.QuizQuestion).order_by(func.random()).limit(limit).all()
+    if not questions:
+        raise HTTPException(status_code=404, detail="No quiz questions found in database")
+    return questions
+
+# In-memory session store for anti-cheat: { session_token -> start_time }
+active_training_sessions = {}
+
+@app.post("/api/training/start", response_model=schemas.TrainingStartResponse)
+async def start_training():
+    """Generate a one-time session token for anti-cheat validation. No login required."""
+    session_token = str(uuid.uuid4())
+    now = datetime.now()
+    active_training_sessions[session_token] = now
+    return {"session_token": session_token, "start_time": now}
+
+@app.post("/api/training/complete", response_model=schemas.TrainingCompleteResponse)
+async def complete_training(request: schemas.TrainingCompleteRequest, db: Session = Depends(database.get_db)):
+    """Submit training result. Verifies session token & runs anti-cheat telemetry check."""
+    # 1. Verify Session
+    start_time = active_training_sessions.get(request.session_token)
+    if not start_time:
+        return {"success": False, "message": "Invalid or expired training session.", "is_valid": False}
+
+    # 2. Anti-Cheat: Sanity Check on rep timestamps
+    is_valid = True
+    message = "訓練紀錄成功！"
+
+    if request.reps > 0 and request.rep_timestamps:
+        if len(request.rep_timestamps) != request.reps:
+            is_valid = False
+            message = "異常偵測：時間戳數量與次數不符。"
+        else:
+            for i in range(1, len(request.rep_timestamps)):
+                interval = request.rep_timestamps[i] - request.rep_timestamps[i-1]
+                if interval < 500:  # < 0.5s per rep is humanly impossible
+                    is_valid = False
+                    message = "異常偵測：動作速度不符合人體極限。"
+                    break
+
+    # Remove session
+    active_training_sessions.pop(request.session_token, None)
+
+    # 3. Save to database (user_id is optional)
+    record = models.TrainingRecord(
+        user_id=None,
+        exercise_type=request.exercise_type,
+        reps=request.reps,
+        duration_seconds=request.duration_seconds,
+        is_valid=is_valid
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "success": is_valid,
+        "message": message,
+        "record_id": record.id,
+        "is_valid": is_valid
+    }
 
 @app.get("/")
 def read_root():

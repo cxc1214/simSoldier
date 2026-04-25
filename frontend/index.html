@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>模擬大兵：入伍生存手冊</title>
 
     <!-- Google Fonts -->
@@ -14,14 +17,22 @@
         rel="stylesheet">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=21">
 
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- MediaPipe Pose Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
     <!-- logic moved to js/main.js -->
 </head>
@@ -250,6 +261,11 @@
                     class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-stone-400 hover:bg-stone-800 hover:text-stone-200">
                     <i class="fa-solid fa-music text-[20px]"></i>
                     <span class="font-bold text-sm">大兵狂想曲</span>
+                </button>
+                <button data-tab="quiz"
+                    class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-stone-400 hover:bg-stone-800 hover:text-stone-200">
+                    <i class="fa-solid fa-graduation-cap text-[20px]"></i>
+                    <span class="font-bold text-sm">天兵課堂</span>
                 </button>
             </nav>
 
@@ -699,136 +715,105 @@
                                 <p class="text-xs text-stone-500 mt-2 text-right">點擊卡片以標記完成</p>
                             </div>
 
-                            <div id="training-content">
-                                <p class="text-sm text-stone-400 mb-6">入營前 30 天開始執行，讓你新訓第一週就能跟上部隊節奏。</p>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <!-- Day 1 -->
-                                    <div
-                                        class="bg-stone-800 rounded-lg p-5 border-l-4 border-stone-600 hover:border-green-500 hover:bg-stone-750 transition-all group shadow-md">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span
-                                                class="text-green-400 text-xs font-bold border border-green-800 px-2 py-1 rounded bg-green-900/20">Day
-                                                1</span>
-                                            <span
-                                                class="text-stone-300 font-bold group-hover:text-white">適應期：核心啟動</span>
-                                        </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">仰臥起坐 10下 x 3組、棒式30秒
-                                        </p>
-                                        <div class="flex justify-end">
-                                            <button
-                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                <i class="fa-solid fa-check"></i> 確認
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <!-- Day 2 -->
-                                    <div
-                                        class="bg-stone-800 rounded-lg p-5 border-l-4 border-stone-600 hover:border-green-500 hover:bg-stone-750 transition-all group shadow-md">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span
-                                                class="text-green-400 text-xs font-bold border border-green-800 px-2 py-1 rounded bg-green-900/20">Day
-                                                2</span>
-                                            <span
-                                                class="text-stone-300 font-bold group-hover:text-white">適應期：下肢肌力</span>
-                                        </div>
-                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
-                                            <iframe width="100%" height="100%"
-                                                src="https://www.youtube.com/embed/m0x0fbKkrUI?si=8eC-pibtE6IgmG6G"
-                                                title="YouTube video player" frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerpolicy="strict-origin-when-cross-origin"
-                                                allowfullscreen></iframe>
-                                        </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">深蹲 15下 x 3組、開合跳
-                                            50下
-                                        </p>
-                                        <div class="flex justify-end">
-                                            <button
-                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                <i class="fa-solid fa-check"></i> 確認
-                                            </button>
+                            <div id="training-content" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <!-- AI Tracker Canvas & Video Area (Left: 2 columns) -->
+                                <div id="training-camera-wrapper"
+                                    class="lg:col-span-2 bg-stone-800 rounded-lg p-4 border border-stone-600 shadow-md flex flex-col items-center">
+                                    <h4 class="text-white font-bold mb-4 w-full text-left">AI 動作偵測系統 (<span
+                                            id="ai-status-text" class="text-yellow-400">未啟動</span>)</h4>
+
+                                    <!-- Canvas Wrapper -->
+                                    <div class="relative w-full aspect-video bg-black rounded overflow-hidden"
+                                        id="training-canvas-container">
+                                        <video id="training-video"
+                                            class="absolute inset-0 w-full h-full object-cover hidden"
+                                            playsinline></video>
+                                        <canvas id="training-canvas"
+                                            class="absolute inset-0 w-full h-full object-contain" width="1280"
+                                            height="720"></canvas>
+
+                                        <!-- Overlay for instructions when idle -->
+                                        <div id="training-overlay"
+                                            class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10">
+                                            <i class="fa-solid fa-camera text-4xl text-stone-400 mb-2"></i>
+                                            <p class="text-stone-300">請允許視訊鏡頭權限</p>
                                         </div>
                                     </div>
-                                    <!-- Day 3 -->
-                                    <div
-                                        class="bg-stone-800 rounded-lg p-5 border-l-4 border-stone-600 hover:border-green-500 hover:bg-stone-750 transition-all group shadow-md">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span
-                                                class="text-green-400 text-xs font-bold border border-green-800 px-2 py-1 rounded bg-green-900/20">Day
-                                                3</span>
-                                            <span
-                                                class="text-stone-300 font-bold group-hover:text-white">強化期：心肺耐力</span>
-                                        </div>
-                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
-                                            <iframe width="100%" height="100%"
-                                                src="https://www.youtube.com/embed/YEV2xpEtlmI?si=WgTUTbecG9q3uqhy"
-                                                title="YouTube video player" frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerpolicy="strict-origin-when-cross-origin"
-                                                allowfullscreen></iframe>
-                                        </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">慢跑 15分鐘 (配速 7分速)
-                                        </p>
-                                        <div class="flex justify-end">
-                                            <button
-                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                <i class="fa-solid fa-check"></i> 確認
+
+                                    <!-- Controls -->
+                                    <div class="flex gap-4 mt-6 w-full justify-center flex-wrap">
+                                        <button id="btn-start-camera"
+                                            class="btn-primary bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded shadow transition-colors flex items-center gap-2">
+                                            <i class="fa-solid fa-video"></i> 開啟鏡頭
+                                        </button>
+
+                                        <div class="relative overflow-hidden">
+                                            <button id="btn-upload-video"
+                                                class="btn-secondary bg-stone-700 hover:bg-stone-600 text-white px-4 py-2 rounded shadow transition-colors flex items-center gap-2">
+                                                <i class="fa-solid fa-upload"></i> 其他
                                             </button>
+                                            <input type="file" id="training-video-upload"
+                                                accept="video/mp4,video/x-m4v,video/*"
+                                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                                         </div>
                                     </div>
-                                    <!-- Day 4 -->
+                                </div>
+
+                                <!-- Today's Mission Panel (Right: 1 column) -->
+                                <div
+                                    class="bg-stone-800 rounded-lg p-5 border-t-4 border-green-500 shadow-md flex flex-col">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <div class="flex gap-2 items-center">
+                                            <span
+                                                class="text-green-400 text-sm font-bold border border-green-800 px-2 py-1 rounded bg-green-900/20">今日課表</span>
+                                            <span id="training-step-label" class="text-stone-400 text-xs">第 1 / 3
+                                                項</span>
+                                        </div>
+                                        <span id="training-exercise-name" class="text-white font-bold text-lg">徒手深蹲
+                                            (Squats)</span>
+                                    </div>
+
+                                    <!-- Reps Display -->
                                     <div
-                                        class="bg-stone-800 rounded-lg p-5 border-l-4 border-stone-600 hover:border-green-500 hover:bg-stone-750 transition-all group shadow-md">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span
-                                                class="text-green-400 text-xs font-bold border border-green-800 px-2 py-1 rounded bg-green-900/20">Day
-                                                4</span>
-                                            <span
-                                                class="text-stone-300 font-bold group-hover:text-white">強化期：上肢推力</span>
+                                        class="flex-grow flex flex-col items-center justify-center py-6 border-b border-stone-700 mb-4">
+                                        <span class="text-stone-400 text-sm mb-2">完成次數 / 目標次數</span>
+                                        <div class="flex items-baseline gap-2">
+                                            <span id="training-rep-count" class="text-6xl font-tech text-white">0</span>
+                                            <span id="training-rep-target" class="text-2xl text-stone-500">/ 15</span>
                                         </div>
-                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
-                                            <iframe width="100%" height="100%"
-                                                src="https://www.youtube.com/embed/l2w2zn_-bQk?si=DnZaEg2XAAdp8zcu"
-                                                title="YouTube video player" frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerpolicy="strict-origin-when-cross-origin"
-                                                allowfullscreen></iframe>
-                                        </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">伏地挺身 15下 x 3組、臥推10下
-                                        </p>
-                                        <div class="flex justify-end">
-                                            <button
-                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                <i class="fa-solid fa-check"></i> 確認
-                                            </button>
+                                        <div class="mt-4 text-center">
+                                            <span id="training-feedback"
+                                                class="text-yellow-400 font-bold bg-yellow-900/30 px-3 py-1 rounded">請準備...</span>
                                         </div>
                                     </div>
-                                    <!-- Day 5 -->
-                                    <div
-                                        class="bg-stone-800 rounded-lg p-5 border-l-4 border-stone-600 hover:border-green-500 hover:bg-stone-750 transition-all group shadow-md">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span
-                                                class="text-green-400 text-xs font-bold border border-green-800 px-2 py-1 rounded bg-green-900/20">Day
-                                                5</span>
-                                            <span
-                                                class="text-stone-300 font-bold group-hover:text-white">恢復期：伸展放鬆</span>
-                                        </div>
-                                        <div class="mb-3 w-full aspect-video rounded-lg overflow-hidden bg-black">
-                                            <iframe width="100%" height="100%"
-                                                src="https://www.youtube.com/embed/cx3NvVg_1qk?si=_qB3St0J9yXvm0Eh"
-                                                title="YouTube video player" frameborder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerpolicy="strict-origin-when-cross-origin"
-                                                allowfullscreen></iframe>
-                                        </div>
-                                        <p class="text-stone-400 text-sm leading-relaxed mb-4">全身靜態伸展 20分鐘，早點睡覺
-                                        </p>
-                                        <div class="flex justify-end">
-                                            <button
-                                                class="btn-confirm-training text-xs bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1">
-                                                <i class="fa-solid fa-check"></i> 確認
-                                            </button>
-                                        </div>
+
+                                    <!-- Instructions -->
+                                    <div class="text-sm text-stone-400">
+                                        <h5 class="font-bold text-stone-300 mb-2"><i
+                                                class="fa-solid fa-circle-info mr-1"></i>動作標準</h5>
+                                        <ul class="list-disc pl-5 space-y-1">
+                                            <li id="rule-1" class="transition-colors text-stone-400">偵測到人體，全身入鏡</li>
+                                            <li id="rule-2" class="transition-colors text-stone-400">完成往下的動作 (偵測中)</li>
+                                            <li id="rule-3" class="transition-colors text-stone-400">完成往上/恢復的動作計一次</li>
+                                        </ul>
+                                        <p id="training-view-hint" class="text-xs text-blue-400 mt-2 italic">💡
+                                            提示：正面或側面朝向鏡頭，全身入鏡</p>
+                                    </div>
+
+                                    <!-- Submit / Retry Buttons -->
+                                    <div class="mt-6 flex gap-2">
+                                        <button id="btn-retry-training"
+                                            class="flex-shrink-0 px-4 py-3 rounded font-bold text-stone-300 bg-stone-600 hover:bg-stone-500 transition-all duration-300 flex items-center gap-2"
+                                            title="重置本動作，重新計數">
+                                            <i class="fa-solid fa-rotate-left"></i> 再做一次
+                                        </button>
+                                        <button id="btn-submit-training"
+                                            class="flex-1 bg-stone-700 text-stone-400 cursor-not-allowed py-3 rounded font-bold transition-all relative overflow-hidden"
+                                            disabled>
+                                            <span class="relative z-10 flex items-center justify-center gap-2">
+                                                <i class="fa-solid fa-lock"></i> 訓練尚未完成
+                                            </span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -865,16 +850,16 @@
 
                     <!-- TAB: CHAT -->
                     <div id="view-chat"
-                        class="view-section hidden flex flex-col h-[calc(100vh-180px)] md:h-[600px] bg-stone-900 rounded-lg shadow-lg overflow-hidden border border-stone-800">
+                        class="view-section hidden flex flex-col h-[calc(100vh-180px)] md:h-[calc(100vh-120px)] w-full max-w-6xl mx-auto bg-stone-900 rounded-lg shadow-lg overflow-hidden border border-stone-800">
                         <div class="bg-stone-800 p-4 border-b border-stone-700 flex justify-between items-center">
                             <div class="flex items-center gap-3">
                                 <div
                                     class="w-10 h-10 rounded-full bg-stone-700 border-2 border-green-600 flex items-center justify-center overflow-hidden">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Instructor"
-                                        alt="Instructor" class="w-full h-full">
+                                    <img src="assets/images/instructor/instructor_avatar.png" alt="Instructor"
+                                        class="w-full h-full object-cover">
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-white">魔鬼班長</h3>
+                                    <h3 class="font-bold text-white">魔鬼教官</h3>
                                     <p class="text-xs text-green-500 flex items-center gap-1"><span
                                             class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Online
                                     </p>
@@ -882,13 +867,8 @@
                             </div>
                         </div>
 
-                        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-stone-950/50">
-                            <div class="flex justify-start">
-                                <div
-                                    class="bg-stone-700 text-stone-200 p-4 rounded-xl rounded-bl-none max-w-[80%] shadow-md">
-                                    注意！有什麼問題現在問，不要進去才在那邊什麼都不知道！(模擬問答)
-                                </div>
-                            </div>
+                        <div id="chat-messages" class="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-stone-950/50">
+                            <!-- Messages will be injected by JavaScript -->
                         </div>
 
                         <form id="chat-form" class="p-4 bg-stone-800 border-t border-stone-700 flex gap-2">
@@ -1011,12 +991,181 @@
                         </div>
                     </div>
 
-                    <!-- TAB: RHAPSODY (Placeholder) -->
+                    <!-- TAB: RHAPSODY (Rhythm Game) -->
                     <div id="view-rhapsody"
-                        class="view-section hidden flex items-center justify-center h-64 bg-stone-900 rounded-lg border border-stone-800">
-                        <div class="text-center text-stone-500">
-                            <i class="fa-solid fa-music text-4xl mb-4"></i>
-                            <p>開發中...</p>
+                        class="view-section hidden h-[calc(100vh-180px)] md:h-[calc(100vh-120px)] w-full max-w-6xl mx-auto bg-stone-900 rounded-lg shadow-lg border border-stone-800 relative overflow-hidden flex flex-col">
+
+                        <!-- Lobby (Splash Screen like Quiz) -->
+                        <div id="rhapsody-lobby" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-[url('https://source.unsplash.com/random/800x600/?military,music')] bg-cover bg-center z-30">
+                            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+                            <div class="z-10 bg-stone-900/80 p-8 rounded-xl border border-green-900/50 backdrop-blur-md max-w-lg w-full shadow-2xl">
+                                <i class="fa-solid fa-music text-6xl text-green-500 mb-6 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]"></i>
+                                <h2 class="text-4xl font-bold text-white mb-4 tracking-wider">大兵狂想曲</h2>
+                                <p class="text-stone-300 mb-8 leading-relaxed">跟著節奏，演練完美的軍事動作！</p>
+                                <div class="flex flex-col gap-4">
+                                    <button id="btn-rhapsody-start"
+                                        class="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-4 rounded-lg text-lg transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(21,128,61,0.4)] flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-video"></i> 開啟攝影機 (預備)
+                                    </button>
+                                    <button id="btn-rhapsody-tutorial-open"
+                                        class="w-full bg-stone-800 hover:bg-stone-700 text-white font-bold py-3 rounded-lg transition-colors border border-stone-600">
+                                        <i class="fa-solid fa-book-open"></i> 演練圖鑑 (課前預習)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Mode (Prep Screen) -->
+                        <div id="rhapsody-preview" class="hidden absolute inset-0 flex flex-col z-20 bg-stone-900 border-2 border-green-500 rounded-lg overflow-hidden">
+                            <div class="p-4 bg-stone-950 flex justify-between items-center z-10 shrink-0">
+                                <h2 class="text-lg font-bold text-white"><i class="fa-solid fa-user-check text-green-500"></i> 動態捕捉測試</h2>
+                                <button id="btn-rhapsody-preview-close" class="text-stone-400 hover:text-white transition-colors border border-stone-600 px-3 py-1 rounded text-sm">取消返回</button>
+                            </div>
+                            
+                            <div class="flex-1 relative bg-black flex flex-col justify-end">
+                                <!-- The camera canvas will be appended here dynamically -->
+                                <div id="rhythm-preview-bg" class="absolute inset-0"></div>
+                                
+                                <!-- Pose Detection Result Overlay -->
+                                <div class="relative z-10 p-6 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col items-center gap-4">
+                                    <div class="text-center">
+                                        <p class="text-stone-400 text-sm mb-1">目前偵測到的動作</p>
+                                        <h3 id="rhythm-preview-pose" class="text-4xl font-bold text-green-400 drop-shadow-[0_0_10px_#4ade80] transition-colors">未偵測</h3>
+                                    </div>
+                                    <button id="btn-rhapsody-real-start" class="w-full max-w-sm bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-full text-xl shadow-[0_0_15px_#22c55e] transition-transform hover:scale-105 active:scale-95">
+                                        <i class="fa-solid fa-play mr-2"></i> 正式開始挑戰
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tutorial Mode -->
+                        <div id="rhapsody-tutorial" class="hidden absolute inset-0 flex flex-col p-6 z-20 bg-stone-900">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-3xl font-bold text-green-500 tracking-wider"><i class="fa-solid fa-book-open"></i> 動作要領圖鑑</h2>
+                                <button id="btn-rhapsody-tutorial-close" class="bg-stone-700 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors font-bold"><i class="fa-solid fa-times"></i> 關閉圖鑑</button>
+                            </div>
+                            
+                            <div class="flex flex-1 gap-6 overflow-hidden">
+                                <!-- 左側：動作選擇 -->
+                                <div class="w-1/3 flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar border-r border-stone-700" id="tutorial-action-selector">
+                                    <!-- JS dynamic inject buttons here -->
+                                </div>
+                                
+                                <!-- 右側：教學展示 -->
+                                <div class="w-2/3 flex flex-col pb-4 h-full">
+                                    <div id="tutorial-display-zone" class="flex-1 bg-black rounded-lg border border-stone-700 mb-4 overflow-hidden shadow-inner flex items-center justify-center relative">
+                                        <!-- JS dynamic images / text here -->
+                                    </div>
+                                    <div
+                                        class="bg-stone-800 p-4 rounded-lg border border-stone-700 shrink-0 min-h-[120px]">
+                                        <p id="tutorial-desc" class="text-stone-300 leading-relaxed text-sm">
+                                            請在左方選擇動作查看教學。</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 啟動按鈕 -->
+                            <div class="mt-4 shrink-0">
+                                <button id="btn-rhapsody-start"
+                                    class="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-4 rounded-lg text-lg transition-all shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-play"></i> 開始演練 (開啟鏡頭)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Game Stage -->
+                        <div id="rhapsody-game-stage" class="hidden absolute inset-0 flex flex-col bg-stone-950 z-20">
+
+                            <!-- Header / HUD -->
+                            <div class="flex justify-between items-center p-4 bg-stone-900 border-b border-stone-800">
+                                <div class="flex items-center gap-4 z-50">
+                                    <div class="text-stone-400 font-mono text-sm">SCORE <span id="rhythm-score"
+                                            class="text-white text-xl ml-2 font-bold font-tech">000000</span></div>
+                                </div>
+                                <div class="flex items-center gap-6 z-50">
+                                    <div class="text-green-500 font-bold font-italic">
+                                        COMBO <span id="rhythm-combo"
+                                            class="text-white text-2xl drop-shadow-[0_0_8px_#4ade80]">0</span>
+                                    </div>
+                                    <button id="btn-rhythm-pause" class="bg-stone-800 border border-stone-600 text-white p-2 rounded-full hover:bg-stone-700 transition">
+                                        <i class="fa-solid fa-pause"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Play Area -->
+                            <div class="flex-1 relative overflow-hidden flex flex-col">
+
+                                <!-- 背景影像區塊 (需要手動對接 MediaPipe 的 Canvas 到這裡) -->
+                                <div id="rhythm-video-bg" class="absolute inset-0 bg-stone-800 flex items-center justify-center">
+                                    <p class="text-stone-500 text-center"><i
+                                            class="fa-solid fa-video text-4xl block mb-2"></i>MediaPipe 攝影機畫面<br><span
+                                            class="text-xs">請將原本的攝影機與骨架 Canvas 顯示於此。</span></p>
+                                    <!-- 預期外部會將 canvas 插入此處 -->
+                                </div>
+
+                                <!-- 節奏軌道重疊層 -->
+                                <div
+                                    class="absolute bottom-10 left-0 right-0 h-24 bg-black/40 backdrop-blur-sm border-y border-stone-600/50 flex z-30">
+                                    <!-- Hit Zone (判定線) -->
+                                    <div
+                                        class="absolute left-[50px] top-0 bottom-0 w-2 bg-green-500 shadow-[0_0_15px_#4ade80] z-10">
+                                    </div>
+                                    <!-- Notes Container -->
+                                    <div id="rhythm-track-zone" class="absolute inset-0 overflow-hidden">
+                                        <!-- JS dynamic notes will scroll here -->
+                                    </div>
+                                </div>
+
+                                <!-- 判定文字 (Perfect/Good/Miss) -->
+                                <div id="rhythm-judgment"
+                                    class="hidden absolute top-1/4 left-1/2 -translate-x-1/2 text-5xl font-bold font-italic z-50">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pause Overlay -->
+                        <div id="rhapsody-pause-menu"
+                            class="hidden absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+                            <h2 class="text-4xl text-white font-bold mb-8 tracking-widest"><i class="fa-solid fa-pause text-yellow-500"></i> 遊戲暫停</h2>
+                            <div class="flex flex-col gap-4 w-64">
+                                <button id="btn-rhythm-resume" class="py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition text-xl shadow-[0_0_15px_#22c55e]">繼續</button>
+                                <button id="btn-rhythm-restart" class="py-3 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-lg transition border border-stone-500">重新開始</button>
+                                <button id="btn-rhythm-quit-now" class="py-3 bg-red-800 hover:bg-red-700 text-white font-bold rounded-lg transition border border-red-500">放棄並退出</button>
+                            </div>
+                        </div>
+
+                        <!-- Countdown Overlay -->
+                        <div id="rhapsody-countdown"
+                            class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                            <div id="rhapsody-countdown-num"
+                                class="text-9xl font-bold text-green-500 animate-pulse drop-shadow-[0_0_30px_#22c55e]">3
+                            </div>
+                        </div>
+
+                        <!-- Result Screen -->
+                        <div id="rhythm-result-screen"
+                            class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-stone-900 border-2 border-green-500 rounded-lg p-8">
+                            <h2 class="text-3xl text-white font-bold mb-2">演練結算</h2>
+                            <p class="text-stone-400 mb-8">Taiwan Flag Anthem - 國旗歌</p>
+
+                            <div id="rhythm-final-rank" class="text-8xl font-bold mb-4 drop-shadow-2xl text-yellow-400">
+                                S</div>
+
+                            <div class="bg-stone-800 p-6 rounded-lg border border-stone-700 w-64 mb-8">
+                                <div class="flex justify-between items-center mb-2"><span
+                                        class="text-stone-400">總分</span> <span id="rhythm-final-score"
+                                        class="text-2xl font-bold text-white">0</span></div>
+                                <div class="flex justify-between items-center"><span class="text-stone-400">最高連擊</span>
+                                    <span id="rhythm-final-combo" class="text-xl font-bold text-green-400">0</span>
+                                </div>
+                            </div>
+
+                            <button id="btn-rhapsody-quit"
+                                class="px-8 py-3 bg-stone-700 hover:bg-stone-600 border border-stone-500 text-white rounded font-bold transition-colors">
+                                結束歸隊
+                            </button>
                         </div>
                     </div>
 
@@ -1372,83 +1521,290 @@
                         </div>
                     </div>
 
+                    <!-- TAB: QUIZ -->
+                    <div id="view-quiz"
+                        class="view-section hidden flex flex-col h-[calc(100vh-180px)] md:h-[calc(100vh-120px)] w-full max-w-6xl mx-auto bg-stone-900 rounded-lg shadow-lg border border-stone-800 relative overflow-hidden">
 
+                        <!-- Lobby -->
+                        <div id="quiz-lobby"
+                            class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-[url('https://source.unsplash.com/random/800x600/?military,classroom')] bg-cover bg-center">
+                            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+                            <div
+                                class="z-10 bg-stone-900/80 p-8 rounded-xl border border-green-900/50 backdrop-blur-md max-w-lg w-full shadow-2xl">
+                                <i
+                                    class="fa-solid fa-graduation-cap text-6xl text-green-500 mb-6 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]"></i>
+                                <h2 class="text-4xl font-bold text-white mb-4 tracking-wider">天兵課堂</h2>
+                                <p class="text-stone-300 mb-8 leading-relaxed">測試你的軍中生存常識！<br>回答越快，分數越高。準備好接受測驗了嗎？</p>
+                                <button id="btn-start-quiz"
+                                    class="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-4 rounded-lg text-lg transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(21,128,61,0.4)] flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-play"></i> 開始測驗
+                                </button>
+                            </div>
+                        </div>
 
-                    <!-- Mobile Navbar -->
-                    <nav
-                        class="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 flex justify-around p-3 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-                        <button data-tab="home" class="nav-btn-mobile flex flex-col items-center gap-1 text-green-500">
-                            <i class="fa-solid fa-chart-line text-[20px]"></i>
-                            <span class="text-[10px]">戰情</span>
-                        </button>
-                        <button data-tab="training"
-                            class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
-                            <i class="fa-solid fa-dumbbell text-[20px]"></i>
-                            <span class="text-[10px]">訓練</span>
-                        </button>
-                        <button data-tab="inventory"
-                            class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
-                            <i class="fa-solid fa-briefcase text-[20px]"></i>
-                            <span class="text-[10px]">背包</span>
-                        </button>
-                        <button data-tab="chat" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
-                            <i class="fa-solid fa-comments text-[20px]"></i>
-                            <span class="text-[10px]">教官</span>
-                        </button>
-                        <button data-tab="docs" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
-                            <i class="fa-solid fa-bars text-[20px]"></i>
-                            <span class="text-[10px]">行政</span>
-                        </button>
-                    </nav>
+                        <!-- Play Area -->
+                        <div id="quiz-play-area" class="hidden absolute inset-0 flex flex-col bg-stone-900">
+                            <!-- HUD -->
+                            <div
+                                class="p-4 bg-stone-950 border-b border-stone-800 flex justify-between items-center shrink-0">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="bg-black/50 px-4 py-2 rounded text-sm font-mono border border-stone-700">
+                                        題目 <span id="quiz-progress" class="text-green-400 font-bold ml-1">1/5</span>
+                                    </div>
+                                    <div
+                                        class="bg-black/50 px-4 py-2 rounded text-sm font-mono border border-green-900/50">
+                                        分數 <span id="quiz-score" class="text-green-400 font-bold ml-1">0</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="text-red-400 font-mono font-bold flex items-center gap-2 bg-red-950/30 px-3 py-1.5 rounded border border-red-900/30">
+                                        <i class="fa-regular fa-clock"></i> <span id="quiz-timer">10.0</span>s
+                                    </div>
+                                    <button id="btn-quit-quiz"
+                                        class="text-stone-400 hover:text-white transition-colors bg-stone-800 hover:bg-stone-700 w-8 h-8 rounded flex items-center justify-center border border-stone-600">
+                                        <i class="fa-solid fa-bars"></i>
+                                    </button>
+                                </div>
+                            </div>
 
+                            <!-- Timer Bar -->
+                            <div class="w-full h-1 bg-stone-800 shrink-0">
+                                <div id="quiz-timer-bar"
+                                    class="h-full bg-green-500 w-full transition-all duration-100 ease-linear"></div>
+                            </div>
+
+                            <!-- Question Content -->
+                            <div class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col h-full relative">
+                                <!-- Feedback overlay -->
+                                <div id="quiz-feedback-overlay"
+                                    class="hidden absolute inset-0 z-20 flex items-center justify-center pointer-events-none bg-black/60 backdrop-blur-sm">
+                                    <div id="quiz-feedback-icon"
+                                        class="text-8xl scale-50 opacity-0 transition-all duration-300"></div>
+                                </div>
+
+                                <div class="max-w-3xl w-full mx-auto flex-1 flex flex-col">
+                                    <!-- Question Text -->
+                                    <div
+                                        class="bg-stone-800 p-6 rounded-xl border border-stone-700 shadow-lg mb-6 shrink-0">
+                                        <h3 id="quiz-question-text"
+                                            class="text-xl md:text-2xl font-bold text-white leading-relaxed">題目載入中...
+                                        </h3>
+                                    </div>
+
+                                    <!-- Options Grid -->
+                                    <div
+                                        class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 flex-1 content-start shrink-0">
+                                        <button
+                                            class="quiz-option bg-stone-800 hover:bg-stone-700 text-left p-4 rounded-xl border-2 border-stone-700 hover:border-green-500 transition-all text-stone-200 font-medium relative overflow-hidden group min-h-[80px] flex items-center"
+                                            data-option="A">
+                                            <span
+                                                class="absolute left-0 top-0 bottom-0 w-12 bg-stone-900 flex items-center justify-center font-bold text-stone-500 group-hover:text-green-500 group-hover:bg-green-900/20 transition-colors border-r border-stone-700">A</span>
+                                            <span class="pl-14 option-text block w-full">選項 A</span>
+                                        </button>
+                                        <button
+                                            class="quiz-option bg-stone-800 hover:bg-stone-700 text-left p-4 rounded-xl border-2 border-stone-700 hover:border-green-500 transition-all text-stone-200 font-medium relative overflow-hidden group min-h-[80px] flex items-center"
+                                            data-option="B">
+                                            <span
+                                                class="absolute left-0 top-0 bottom-0 w-12 bg-stone-900 flex items-center justify-center font-bold text-stone-500 group-hover:text-green-500 group-hover:bg-green-900/20 transition-colors border-r border-stone-700">B</span>
+                                            <span class="pl-14 option-text block w-full">選項 B</span>
+                                        </button>
+                                        <button
+                                            class="quiz-option bg-stone-800 hover:bg-stone-700 text-left p-4 rounded-xl border-2 border-stone-700 hover:border-green-500 transition-all text-stone-200 font-medium relative overflow-hidden group min-h-[80px] flex items-center"
+                                            data-option="C">
+                                            <span
+                                                class="absolute left-0 top-0 bottom-0 w-12 bg-stone-900 flex items-center justify-center font-bold text-stone-500 group-hover:text-green-500 group-hover:bg-green-900/20 transition-colors border-r border-stone-700">C</span>
+                                            <span class="pl-14 option-text block w-full">選項 C</span>
+                                        </button>
+                                        <button
+                                            class="quiz-option bg-stone-800 hover:bg-stone-700 text-left p-4 rounded-xl border-2 border-stone-700 hover:border-green-500 transition-all text-stone-200 font-medium relative overflow-hidden group min-h-[80px] flex items-center"
+                                            data-option="D">
+                                            <span
+                                                class="absolute left-0 top-0 bottom-0 w-12 bg-stone-900 flex items-center justify-center font-bold text-stone-500 group-hover:text-green-500 group-hover:bg-green-900/20 transition-colors border-r border-stone-700">D</span>
+                                            <span class="pl-14 option-text block w-full">選項 D</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Explanation Area -->
+                                    <div id="quiz-explanation-area"
+                                        class="hidden bg-blue-900/20 border border-blue-800/50 rounded-xl p-5 shrink-0 animate-fade-in mt-auto">
+                                        <div class="flex items-start gap-3">
+                                            <i class="fa-solid fa-circle-info text-blue-400 mt-1"></i>
+                                            <div>
+                                                <h4 class="font-bold text-blue-400 mb-1">詳解</h4>
+                                                <p id="quiz-explanation-text"
+                                                    class="text-stone-300 text-sm leading-relaxed mb-2">這裡會顯示詳解內容。</p>
+                                                <div id="quiz-source-text" class="text-xs text-stone-500">出處：--</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 flex justify-end">
+                                            <button id="btn-next-question"
+                                                class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition-colors flex items-center gap-2">
+                                                下一題 <i class="fa-solid fa-arrow-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Pause Modal -->
+                        <div id="quiz-pause-overlay"
+                            class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in">
+                            <div
+                                class="bg-stone-900 border border-yellow-500 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+                                <div class="text-6xl mb-4 text-yellow-500"><i class="fa-solid fa-pause"></i></div>
+                                <h2 class="text-2xl font-bold text-white mb-2">測驗暫停中</h2>
+                                <p class="text-stone-400 text-sm mb-6">您切換了畫面，目前計時已暫停。<br>要繼續測驗嗎？</p>
+                                <div class="flex flex-col gap-3">
+                                    <button id="btn-quiz-resume"
+                                        class="w-full py-3 rounded-xl font-bold text-white bg-yellow-600 hover:bg-yellow-500 transition-colors">
+                                        <i class="fa-solid fa-play mr-2"></i>繼續測驗
+                                    </button>
+                                    <button id="btn-quiz-quit-paused"
+                                        class="w-full py-3 rounded-xl font-bold text-stone-300 bg-stone-700 hover:bg-red-600 hover:text-white transition-colors">
+                                        <i class="fa-solid fa-right-from-bracket mr-2"></i>結束並退出
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Result Screen -->
+                    <div id="quiz-result-area"
+                        class="hidden absolute inset-0 flex flex-col items-center justify-center bg-stone-900 p-8 text-center overflow-y-auto">
+                        <i
+                            class="fa-solid fa-medal text-6xl text-yellow-500 mb-6 drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]"></i>
+                        <h2 class="text-3xl font-bold text-white mb-2">測驗完成</h2>
+                        <p id="quiz-rank-text" class="text-xl font-bold text-green-400 mb-8 tracking-wider">天兵評等：優良</p>
+
+                        <div class="bg-stone-800 p-6 rounded-xl border border-stone-700 w-full max-w-sm mb-8">
+                            <div class="text-sm text-stone-400 mb-1">總得分</div>
+                            <div id="quiz-final-score" class="text-5xl font-tech font-bold text-white mb-4">0</div>
+                            <div class="flex justify-between text-sm border-t border-stone-700 pt-4">
+                                <span class="text-stone-400">正確題數</span>
+                                <span id="quiz-correct-count" class="text-white font-bold">0 / 5</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button id="btn-retry-quiz"
+                                class="bg-stone-700 hover:bg-stone-600 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-right"></i> 再測一次
+                            </button>
+                            <button id="btn-exit-quiz"
+                                class="bg-stone-800 border border-stone-600 hover:bg-stone-700 text-white px-6 py-3 rounded-lg font-bold transition-colors">
+                                返回
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Docs Modal -->
-            <div id="modal-docs"
-                class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 font-mono backdrop-blur-sm hidden">
-                <div
-                    class="max-w-2xl w-full bg-stone-800 rounded-lg border-2 border-green-700 shadow-2xl overflow-hidden animate-fade-in relative">
-                    <button id="btn-close-docs"
-                        class="absolute right-4 top-4 text-stone-400 hover:text-white transition-colors z-10">
-                        <i class="fa-solid fa-xmark text-2xl"></i>
+
+
+                <!-- Mobile Navbar -->
+                <nav
+                    class="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 flex justify-around p-3 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+                    <button data-tab="home" class="nav-btn-mobile flex flex-col items-center gap-1 text-green-500">
+                        <i class="fa-solid fa-chart-line text-[20px]"></i>
+                        <span class="text-[10px]">戰情</span>
                     </button>
-                    <div class="bg-stone-900/50 p-6 border-b border-stone-700">
-                        <h3 id="docs-modal-title" class="text-xl font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-file-lines text-green-500"></i>
-                            <span>文件標題</span>
-                        </h3>
-                    </div>
-                    <div class="p-8 text-center space-y-6">
-                        <p id="docs-modal-content" class="text-stone-300 leading-relaxed">
-                            文件內容說明...
-                        </p>
-                        <a id="docs-modal-link" href="#" target="_blank"
-                            class="inline-flex items-center gap-2 text-green-500 hover:text-green-400 font-bold transition-colors text-lg border-b border-green-500/50 hover:border-green-400 pb-1">
-                            <i class="fa-solid fa-link"></i>
-                            <span>前往官方網站</span>
-                        </a>
-                    </div>
+                    <button data-tab="training" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
+                        <i class="fa-solid fa-dumbbell text-[20px]"></i>
+                        <span class="text-[10px]">訓練</span>
+                    </button>
+                    <button data-tab="inventory" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
+                        <i class="fa-solid fa-briefcase text-[20px]"></i>
+                        <span class="text-[10px]">背包</span>
+                    </button>
+                    <button data-tab="chat" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
+                        <i class="fa-solid fa-comments text-[20px]"></i>
+                        <span class="text-[10px]">教官</span>
+                    </button>
+                    <button data-tab="docs" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
+                        <i class="fa-solid fa-bars text-[20px]"></i>
+                        <span class="text-[10px]">行政</span>
+                    </button>
+                    <button data-tab="quiz" class="nav-btn-mobile flex flex-col items-center gap-1 text-stone-500">
+                        <i class="fa-solid fa-graduation-cap text-[20px]"></i>
+                        <span class="text-[10px]">課堂</span>
+                    </button>
+                </nav>
+
+            </div>
+        </div>
+
+        <!-- Docs Modal -->
+        <div id="modal-docs"
+            class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 font-mono backdrop-blur-sm hidden">
+            <div
+                class="max-w-2xl w-full bg-stone-800 rounded-lg border-2 border-green-700 shadow-2xl overflow-hidden animate-fade-in relative">
+                <button id="btn-close-docs"
+                    class="absolute right-4 top-4 text-stone-400 hover:text-white transition-colors z-10">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <div class="bg-stone-900/50 p-6 border-b border-stone-700">
+                    <h3 id="docs-modal-title" class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines text-green-500"></i>
+                        <span>文件標題</span>
+                    </h3>
+                </div>
+                <div class="p-8 text-center space-y-6">
+                    <p id="docs-modal-content" class="text-stone-300 leading-relaxed">
+                        文件內容說明...
+                    </p>
+                    <a id="docs-modal-link" href="#" target="_blank"
+                        class="inline-flex items-center gap-2 text-green-500 hover:text-green-400 font-bold transition-colors text-lg border-b border-green-500/50 hover:border-green-400 pb-1">
+                        <i class="fa-solid fa-link"></i>
+                        <span>前往官方網站</span>
+                    </a>
                 </div>
             </div>
+        </div>
 
-            <!-- Custom JS -->
-            <script>
-                // Toggle Location Details (Global Function for onclick)
-                function toggleLocation(element) {
-                    const card = element.parentElement;
-                    const details = card.querySelector('.location-details');
-                    const icon = element.querySelector('.fa-chevron-down');
+        <!-- Custom JS -->
+        <script>
+            // Toggle Location Details (Global Function for onclick)
+            function toggleLocation(element) {
+                const card = element.parentElement;
+                const details = card.querySelector('.location-details');
+                const icon = element.querySelector('.fa-chevron-down');
 
-                    if (details) {
-                        details.classList.toggle('hidden');
-                        if (icon) {
-                            icon.style.transform = details.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-                        }
+                if (details) {
+                    details.classList.toggle('hidden');
+                    if (icon) {
+                        icon.style.transform = details.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
                     }
                 }
-            </script>
-            <script type="module" src="js/main.js"></script>
+            }
+        </script>
+        <!-- Congratulation Modal -->
+        <div id="training-complete-modal"
+            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div
+                class="bg-stone-900 border border-green-500 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center animate-[fadeInUp_0.4s_ease]">
+                <div class="text-6xl mb-4">🎖️</div>
+                <h2 class="text-2xl font-bold text-white mb-2">今日目標達成！</h2>
+                <p class="text-green-400 font-semibold mb-1">菜鳥不累成狗計畫</p>
+                <p class="text-stone-400 text-sm mb-6">深蹲 · 伏地挺身 · 平躺抬腿<br>三項訓練全部完成，成績已寫入紀錄。</p>
+                <div class="w-full bg-stone-800 rounded-full h-2 mb-6 overflow-hidden">
+                    <div
+                        class="h-full bg-gradient-to-r from-green-600 to-green-400 w-full transition-all duration-1000">
+                    </div>
+                </div>
+                <button id="btn-close-complete-modal"
+                    class="w-full py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-500 transition-colors">
+                    <i class="fa-solid fa-flag-checkered mr-2"></i>繼續前進！
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Application Script -->
+        <script type="module" src="js/main.js?v=20"></script>
+
+        <!-- Rhythm Game Script (Zero Modification Rule applied) -->
+        <script src="js/rhythm_game.js"></script>
 </body>
 
 </html>
