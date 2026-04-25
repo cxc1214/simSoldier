@@ -8,12 +8,20 @@ load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Fallback for local development if not set, though user should set it
+# Handle the case where the backend is running outside Docker but DATABASE_URL points to 'db'
+if SQLALCHEMY_DATABASE_URL and "@db/" in SQLALCHEMY_DATABASE_URL:
+    import socket
+    try:
+        # Check if 'db' is resolvable
+        socket.gethostbyname("db")
+    except socket.gaierror:
+        # Fallback to localhost if 'db' is not resolvable (typical for local dev outside docker)
+        print("Warning: Host 'db' not found, falling back to localhost for DATABASE_URL")
+        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("@db/", "@localhost/")
+
 if not SQLALCHEMY_DATABASE_URL:
-    # Default to sqlite for testing if postgres not ready? 
-    # The prompt explicitly asked for postgresql. 
-    # I'll leave it empty to force error or manual set, or provide a default local postgres url
-    SQLALCHEMY_DATABASE_URL = "postgresql://user:password@localhost/dbname"
+     # Default to local postgres if not set
+     SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@localhost/simsoldier"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

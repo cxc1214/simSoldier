@@ -77,36 +77,121 @@ function toggleItem(id) {
 }
 
 // --- Chat ---
-export function handleChatSubmit(e) {
+export async function handleChatSubmit(e) {
     e.preventDefault();
     const text = dom.chatInput.value.trim();
     if (!text) return;
 
+    // Add user message
     addMessage(text, 'user');
     dom.chatInput.value = '';
 
-    setTimeout(() => {
-        const randomResp = INSTRUCTOR_RESPONSES[Math.floor(Math.random() * INSTRUCTOR_RESPONSES.length)];
-        addMessage(randomResp, 'bot');
-    }, 1000);
+    // Add "typing" indicator
+    const typingId = 'typing-' + Date.now();
+    addTypingIndicator(typingId);
+
+    try {
+        const response = await api.askSimSoldier(text);
+        removeTypingIndicator(typingId);
+        addMessage(response, 'bot');
+    } catch (e) {
+        removeTypingIndicator(typingId);
+        addMessage('班長現在不在營區，請稍後再試。', 'bot');
+    }
 }
 
-function addMessage(text, sender) {
+function addTypingIndicator(id) {
     const div = document.createElement('div');
-    div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`;
-
-    const contentClass = sender === 'user'
-        ? "bg-green-700 text-white rounded-br-none"
-        : "bg-stone-700 text-stone-200 rounded-bl-none";
-
+    div.id = id;
+    div.className = `flex justify-start items-start gap-2 mb-3 animate-fade-in`;
     div.innerHTML = `
-        <div class="max-w-[80%] md:max-w-[60%] p-4 rounded-xl text-base shadow-md ${contentClass}">
-            ${text}
+        <div class="w-8 h-8 rounded-full bg-stone-700 flex-shrink-0 border border-green-600 overflow-hidden">
+            <img src="assets/images/instructor/instructor_avatar.png" class="w-full h-full object-cover">
+        </div>
+        <div class="px-3 py-2 rounded-xl bg-stone-700 text-stone-200 rounded-bl-none flex gap-1 items-center shadow-md">
+            <span class="w-1.5 h-1.5 rounded-full bg-stone-400 animate-bounce"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-stone-400 animate-bounce" style="animation-delay: 0.1s"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-stone-400 animate-bounce" style="animation-delay: 0.2s"></span>
         </div>
     `;
     dom.chatMessages.appendChild(div);
     dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
 }
+
+function removeTypingIndicator(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+function addMessage(text, sender) {
+    const div = document.createElement('div');
+    const isUser = sender === 'user';
+    div.className = `flex ${isUser ? 'justify-end' : 'justify-start'} items-start gap-2 mb-4 animate-fade-in`;
+
+    const contentClass = isUser
+        ? "bg-green-700 text-white rounded-br-none"
+        : "bg-stone-700 text-stone-200 rounded-bl-none";
+
+    const avatar = isUser
+        ? `<div class="w-8 h-8 rounded-full bg-green-800 flex-shrink-0 border border-green-600 flex items-center justify-center text-[14px] text-white overflow-hidden order-2 shadow-sm">
+            <i class="fa-solid fa-user w-4 h-4 flex items-center justify-center"></i>
+           </div>`
+        : `<div class="w-8 h-8 rounded-full bg-stone-800 flex-shrink-0 border border-green-600 overflow-hidden order-1 shadow-sm">
+            <img src="assets/images/instructor/instructor_avatar.png" class="w-full h-full object-cover">
+           </div>`;
+
+    div.innerHTML = `
+        ${avatar}
+        <div class="max-w-[85%] md:max-w-[50%] px-4 py-2 rounded-xl text-sm md:text-base shadow-md ${contentClass} whitespace-pre-wrap leading-snug ${isUser ? 'order-1 mr-1' : 'order-2 ml-1'}">
+            ${text.replace(/\n{3,}/g, '\n\n').trim()}
+        </div>
+    `;
+    dom.chatMessages.appendChild(div);
+    dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
+}
+
+export function initChatGreeting() {
+    dom.chatMessages.innerHTML = '';
+
+    if (!state.userData || !state.serviceStatus) {
+        addMessage("注意！有什麼問題現在問，不要進去才在那邊什麼都不知道！", 'bot');
+        return;
+    }
+
+    const name = state.userData.name || "菜鳥";
+    const statusType = state.serviceStatus.type || "";
+
+    let greeting = "";
+    if (statusType.includes("免役")) {
+        greeting = `注意！${name}，聽說你免役了是不是？那還來戰情中心幹嘛？不想去玩沙就來練習問答！`;
+    } else if (statusType.includes("替代役")) {
+        greeting = `注意！${name}，${statusType}也是要好好表現的，不要給我丟臉！有什麼問題現在提早問！`;
+    } else {
+        if (!state.userData.date) {
+            greeting = `注意！${name}，連入伍日期都還沒去設定，皮在癢是不是？遇到什麼不懂的趕緊發問！`;
+        } else {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const targetDate = new Date(state.userData.date);
+            targetDate.setHours(0, 0, 0, 0);
+
+            const dischargeDate = new Date(targetDate);
+            dischargeDate.setMonth(dischargeDate.getMonth() + 4);
+
+            if (today >= dischargeDate) {
+                greeting = `注意！${name}，你都退伍了還回來幹嘛？想重新簽志願役是不是？！`;
+            } else if (today >= targetDate) {
+                greeting = `注意！${name}，你已經入營了！怎麼還有手機可以滑？長官在哪裡？！`;
+            } else {
+                const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+                greeting = `注意！${name}，距離你入營只剩 ${diffDays} 天！東西準備好了沒？有問題快問！`;
+            }
+        }
+    }
+
+    addMessage(greeting, 'bot');
+}
+
 
 // --- Training ---
 export function toggleTrainingDay(dayId, cardElement, btnElement) {
@@ -390,12 +475,12 @@ export function setupDateInputs() {
             const val = parseInt(e.target.value);
             if (isNaN(val)) return;
 
-            if (e.target.id.includes('-m')) {
+            if (e.target.id.endsWith('-m')) {
                 if (val < 1) e.target.value = '01';
                 if (val > 12) e.target.value = '12';
                 e.target.value = e.target.value.padStart(2, '0');
             }
-            if (e.target.id.includes('-d')) {
+            if (e.target.id.endsWith('-d')) {
                 if (val < 1) e.target.value = '01';
                 if (val > 31) e.target.value = '31';
                 e.target.value = e.target.value.padStart(2, '0');

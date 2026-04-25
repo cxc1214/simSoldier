@@ -9,12 +9,18 @@ import { dom, switchTab } from './ui.js';
 import { determineServiceType, bmi } from './utils.js';
 import * as game from './game.js';
 import * as features from './features.js';
+import { training_ai } from './training_ai.js';
+import { initQuiz } from './quiz.js';
 
 // --- Initialization ---
 
-// Check Auth immediately
+// 1. Check Auth immediately
 if (!api.checkAuth()) {
-    window.location.href = 'login.html';
+    // 沒登入就直接跳轉，並用 replace 避免產生上一頁的歷史紀錄
+    window.location.replace('loadingbar.html?dest=login.html');
+} else {
+    // 2. 確定有登入，才允許執行初始化！(這非常重要，避免跳轉時在背景報錯)
+    init();
 }
 
 async function init() {
@@ -24,7 +30,11 @@ async function init() {
         // Init Backpack
         state.backpack = JSON.parse(JSON.stringify(INITIAL_BACKPACK));
 
-        if (user && user.profile) {
+        if (user) {
+            if (!user.profile) {
+                console.warn('Auto-fixing missing user profile...');
+                user.profile = { name: "士兵", height: 175, weight: 70, role: "regular", disability: false, date: null };
+            }
             state.isLoggedIn = true;
             state.userData = user.profile;
             state.serviceStatus = determineServiceType(
@@ -48,30 +58,48 @@ async function init() {
                 });
             }
         } else {
-            console.error('User profile not found, clearing session.');
-            api.logout(); // Clear session before redirecting
+            console.error('User not found, clearing session.');
+            // 只清空當前登入狀態，絕對不要動 localStorage
+            sessionStorage.removeItem('simSoldier_currentUser');
+            api.logout();
             return;
         }
 
         features.renderInventory();
         features.startCountdownTimer();
         features.setupDateInputs(); // Init Date Input Logic
+        features.initChatGreeting(); // 根據兵役狀態與日期產生自適應的教官開場白
         setupEventListeners();
+
+        // 啟動 AI 訓練模組與天兵課堂
+        try {
+            training_ai.init();
+            console.log('AI Training initialized');
+        } catch (e) {
+            console.error('AI Training init failed:', e);
+        }
+
+        try {
+            initQuiz();
+            console.log('Quiz initialized');
+        } catch (e) {
+            console.error('Quiz init failed:', e);
+        }
 
         // Reveal UI after successful load
         document.body.classList.remove('opacity-0');
 
     } catch (error) {
         console.error('Init error:', error);
-        // DEBUG: Alert the error so we can see what's wrong without devtools
         if (error.message === 'Not logged in') {
-            api.logout(); // Normal redirect for unauth users
+            // 發生未登入錯誤時，清除登入狀態並踢出
+            sessionStorage.removeItem('simSoldier_currentUser');
+            api.logout();
             return;
         }
         alert('系統發生錯誤 (DEBUG模式):\n' + error.message + '\n\n' + error.stack);
     }
 }
-
 function updateUIForUser() {
     const { name } = state.userData;
 
@@ -349,7 +377,13 @@ async function handleOnboardingSubmit() {
     btnSubmit.disabled = true;
 
     try {
-        await api.updateProfile(userData);
+        const savedData = await api.updateProfile(userData);
+
+        if (savedData && savedData._nameChanged) {
+            alert('姓名即為您的登入帳號，已變更成功，請重新登入！');
+            api.logout();
+            return;
+        }
 
         // Update local state
         state.userData = userData;

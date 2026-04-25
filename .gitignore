@@ -1,2 +1,18 @@
 
+# Security
+.env
+
+# Python
 *.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+
+# Database
+backend/data/
+*.log
+
+# Frontend/Node
+node_modules/
+.DS_Store

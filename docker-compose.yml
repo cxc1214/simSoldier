@@ -22,6 +22,8 @@ services:
   backend:
     build: ./backend
     container_name: simsoldier_backend
+    env_file:
+      - ./backend/.env
     depends_on:
       db:
         condition: service_healthy
@@ -30,6 +32,8 @@ services:
       SECRET_KEY: your_super_secret_key_change_me
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    volumes:
+      - ./backend/data:/app/data:ro
     ports:
       - "8000:8000"
 
