@@ -1,6 +1,7 @@
 from google import genai
 import chromadb
 import os
+import random
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,6 +36,15 @@ documents = [
     '''
 ]
 
+CLASSIC_LINES = [
+    "混蛋，白癡啊？混吃等死啊？每天在幹什麼事情啊",
+    "什麼棉被啊!人家是西田軍校!你是西田麵包啊!沒吃飽是不是啊!爛透了!為什麼不把他塗年果醬就把他吃掉啊!這是什麼東西啊？蛋捲啊？",
+    "軍心散亂，什麼東西啊？誰是執星官？",
+    "我就知道是你，又是你，你最爛！你這個髒頭鼠目 尖嘴紅腮頭上長瘡，腳底流膿，你是爛透了！",
+    "幹嘛 你現在用這種眼神看我 你是愛我還恨我",
+    "阿你不是很邱"
+]
+
 prompt_template = """
 【角色設定】
 你現在是軍事模擬系統「simSoldier」的專屬 AI 教官兼系統小助手。你的性格嚴格、說話簡潔有力，帶有軍中班長或教官的絕對威嚴。你不會使用過度客氣、溫柔或機器人般的客服語氣。
@@ -49,15 +59,6 @@ prompt_template = """
 - 絕對禁止回答與「軍事、系統操作、軍旅生活」無關的問題。如果使用者偏離主題，請以教官口吻嚴厲訓斥並導回正題。
 - 回答必須精簡，條理分明，符合軍事化的效率標準。
 - 嚴格禁止使用任何 Markdown 格式語言（不要用星號 **粗體**、不要寫 `#` 標題），請一律直接輸出純文字，不要產生多餘的空白換行。
-- 在回答時請加上經典台詞並合併語意。
-經典台詞:
--混蛋，白癡啊？混吃等死啊？每天在幹什麼事情啊
--什麼棉被啊!人家是西田軍校!你是西田麵包啊!沒吃飽是不是啊!爛透了!為什麼不把他塗年果醬就把他吃掉啊!這是什麼東西啊？蛋捲啊？
--軍心散亂，什麼東西啊？誰是執星官？
--我就知道是你，又是你，你最爛！你這個髒頭鼠目 尖嘴紅腮頭上長瘡，腳底流膿，你是爛透了！
--幹嘛 你現在用這種眼神看我 你是愛我還恨我
--阿你不是很邱
-
 
 【參考資料】（如果有的話，依此回答，沒有則憑你的軍事常識）：
 {context}
@@ -65,7 +66,13 @@ prompt_template = """
 【新兵個人資料】：
 {user_info}
 
-請大聲訓斥或精準回答下方新兵的提問！
+【強制輸出格式】
+你「必須」完全依照以下格式來回覆，絕對不能省略開頭的經典台詞，也不能加上其他贅字：
+
+{selected_line}
+（在這裡接續你對新兵提問的嚴厲回答，請配合台詞的情境，讓語氣連貫）
+
+====================
 新兵提問：{question}
 """
 
@@ -124,7 +131,8 @@ def ask_gemini(user_info:dict,question: str):
              context = ""
         
         # 4. Ask Gemini with the context
-        prompt = prompt_template.format(context=context, user_info=user_info, question=question)
+        selected_line = random.choice(CLASSIC_LINES)
+        prompt = prompt_template.format(context=context, user_info=user_info, question=question, selected_line=selected_line)
         
         response = client.models.generate_content(
             model="models/gemini-2.5-flash",

@@ -176,6 +176,16 @@ async function prepareSystem() {
     });
     poseTracker.onResults(onResults);
     await poseTracker.initialize();
+    
+    // 暖機 (Warm-up) 模型：避免第一次處理影像時卡頓太久導致錯過影片開頭
+    try {
+        const dummyCanvas = document.createElement('canvas');
+        dummyCanvas.width = 64; dummyCanvas.height = 64;
+        await poseTracker.send({ image: dummyCanvas });
+    } catch (e) {
+        console.warn('Warmup skipped:', e);
+    }
+    
     updateFeedback('模型就緒，開始偵測', 'text-green-400', 'bg-green-900/30');
 }
 
@@ -190,8 +200,8 @@ function onResults(results) {
     ui.ctx.drawImage(results.image, 0, 0, w, h);
 
     if (results.poseLandmarks) {
-        if (isVideoMode) {
-            //測試用節點
+        // 在攝影機模式或測試影片模式下皆繪製訓練用骨架
+        if (isVideoMode || (!window.RhythmGame || (!window.RhythmGame.isPreview && !window.RhythmGame.isActive))) {
             drawConnectors(ui.ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
             drawLandmarks(ui.ctx, results.poseLandmarks, { color: '#FF4444', lineWidth: 2, radius: 4 });
         }
@@ -342,9 +352,9 @@ function detectLegRaise(lm) {
     const anY = ((lOk ? lAn.y : 0) + (rOk ? rAn.y : 0)) / (lOk && rOk ? 2 : 1);
     const delta = hiY - anY;
 
-    // Raised (“down” state in state machine): delta > 0.18: ankles clearly above hips
-    // Flat (“up” / rest state): delta < 0.06
-    repStateMachine(delta > 0.18, delta < 0.06);
+    // Raised (“down” state in state machine): delta > 0.35: ankles significantly above hips
+    // Flat (“up” / rest state): delta < 0.1
+    repStateMachine(delta > 0.35, delta < 0.1);
 }
 
 // ── Completion logic ─────────────────────────────────────────────────────────
@@ -425,6 +435,10 @@ async function submitAllResults() {
 
     // Stop camera
     if (camera) { camera.stop(); camera = null; cameraRunning = false; setCameraActive(false); }
+    if (ui.video && ui.video.srcObject) {
+        ui.video.srcObject.getTracks().forEach(track => track.stop());
+        ui.video.srcObject = null;
+    }
 
     // Reset state for next time
     completedResults.length = 0;
@@ -455,10 +469,23 @@ async function processVideoFrame() {
 function bindEvents() {
     // Camera toggle
     const toggleCamera = async () => {
-        if (cameraRunning) {
+        if (cameraRunning || isVideoMode) {
             if (camera) { camera.stop(); camera = null; }
-            cameraRunning = false; setCameraActive(false);
+            if (ui.video && ui.video.srcObject) {
+                ui.video.srcObject.getTracks().forEach(track => track.stop());
+                ui.video.srcObject = null;
+            }
+            if (isVideoMode) {
+                ui.video.pause();
+                ui.video.src = '';
+                ui.video.removeAttribute('src');
+                ui.video.load();
+                isVideoMode = false;
+            }
+            cameraRunning = false; 
+            setCameraActive(false);
             ui.overlay.classList.remove('hidden');
+            if (ui.ctx) ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
             return;
         }
         await prepareSystem();
@@ -498,8 +525,10 @@ function bindEvents() {
         ui.video.onloadedmetadata = () => {
             if (ui.video.videoWidth) ui.canvas.width = ui.video.videoWidth;
             if (ui.video.videoHeight) ui.canvas.height = ui.video.videoHeight;
-            ui.video.play().then(() => requestAnimationFrame(processVideoFrame))
-                .catch(e => updateFeedback('影片播放失敗：' + e.message, 'text-red-400', 'bg-red-900/30'));
+            ui.video.play().then(() => {
+                setCameraActive(true); // 讓按鈕變成關閉狀態，以便使用者點擊停止影片
+                requestAnimationFrame(processVideoFrame);
+            }).catch(e => updateFeedback('影片播放失敗：' + e.message, 'text-red-400', 'bg-red-900/30'));
         };
     });
 

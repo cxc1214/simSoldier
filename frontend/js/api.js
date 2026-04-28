@@ -312,5 +312,21 @@ export const api = {
             console.error(e);
             return '連線失敗，請稍後再試。';
         }
+    },
+
+    /**
+     * 獲取梯次統計資料
+     */
+    async getCohortStats() {
+        try {
+            const res = await this._fetch('http://localhost:8000/api/cohort-stats', {
+                method: 'GET'
+            });
+            if (!res.ok) throw new Error('無法取得統計資料');
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
     }
 };

@@ -493,3 +493,56 @@ export function startCountdownTimer() {
     setInterval(updateCountdown, 1000 * 60 * 60);
     setTimeout(updateCountdown, 100);
 }
+
+export async function renderCohortChart() {
+    const data = await api.getCohortStats();
+    if (!data) return;
+
+    const chartEl = document.getElementById('cohort-chart');
+    const legendEl = document.getElementById('cohort-legend-container');
+    const titleEl = document.getElementById('cohort-title');
+    
+    if (!chartEl || !legendEl || !titleEl) return;
+
+    titleEl.textContent = `${data.year}人員分析`;
+
+    const colors = {
+        "大學專科": "bg-blue-500",
+        "高中職": "bg-emerald-500",
+        "國中": "bg-amber-500",
+        "其他": "bg-stone-500"
+    };
+
+    const colorHex = {
+        "大學專科": "#3b82f6",
+        "高中職": "#10b981",
+        "國中": "#f59e0b",
+        "其他": "#78716c"
+    };
+
+    let conicParts = [];
+    let currentDegree = 0;
+    legendEl.innerHTML = '';
+
+    for (const [key, value] of Object.entries(data.data)) {
+        const percentage = Math.round((value / data.total) * 100);
+        const percentRaw = (value / data.total) * 100;
+        
+        if (percentage > 0) {
+            conicParts.push(`${colorHex[key]} ${currentDegree}% ${currentDegree + percentRaw}%`);
+            currentDegree += percentRaw;
+
+            legendEl.innerHTML += `
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full ${colors[key]}"></span>
+                        <span class="text-stone-300">${key}</span>
+                    </div>
+                    <span class="font-tech text-stone-500">${percentage}%</span>
+                </div>
+            `;
+        }
+    }
+
+    chartEl.style.background = `conic-gradient(${conicParts.join(', ')})`;
+}

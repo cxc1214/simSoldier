@@ -232,6 +232,41 @@ async def complete_training(request: schemas.TrainingCompleteRequest, db: Sessio
         "is_valid": is_valid
     }
 
+@app.get("/api/cohort-stats")
+async def get_cohort_stats():
+    file_path = os.path.join(os.path.dirname(__file__), "..", "data", "臺北市徵兵及齡男子兵籍調查概況.csv")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="CSV file not found")
+        
+    try:
+        with open(file_path, "r", encoding="big5") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            if not rows:
+                raise HTTPException(status_code=404, detail="CSV file is empty")
+                
+            latest_row = rows[-1]
+            
+            uni = int(latest_row.get('教育程度大學專科畢業人數', 0)) + int(latest_row.get('教育程度大學專科肄業人數', 0))
+            hs = int(latest_row.get('教育程度高中高職畢業人數', 0)) + int(latest_row.get('教育程度高中高職肄業人數', 0))
+            ms = int(latest_row.get('教育程度國中畢業人數', 0)) + int(latest_row.get('教育程度國中肄業人數', 0))
+            others = int(latest_row.get('教育程度國小以下人數', 0)) + int(latest_row.get('教育程度其他人數', 0))
+            
+            total = int(latest_row.get('兵籍調查人數', uni + hs + ms + others))
+            
+            return {
+                "year": latest_row.get('年次', '未知'),
+                "total": total,
+                "data": {
+                    "大學專科": uni,
+                    "高中職": hs,
+                    "國中": ms,
+                    "其他": others
+                }
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading CSV: {str(e)}")
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to SimSoldier Backend"}
