@@ -35,9 +35,14 @@
 }
 
 body {
-    font-family: "Microsoft JhengHei", "Heiti TC", sans-serif !important;
+    font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
     background-color: var(--bg-base);
     color: var(--text-main);
+}
+
+/* 防止強制字體覆蓋圖示庫 */
+body *:not(i) {
+    font-family: inherit;
 }
 
 /* Ensure Tailwind fonts don't override it if applied specifically */

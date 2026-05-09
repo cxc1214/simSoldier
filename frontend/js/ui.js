@@ -17,13 +17,11 @@ export const dom = {
         rhapsody: document.getElementById('view-rhapsody'),
         video: document.getElementById('view-video'),
         game: document.getElementById('view-game'),
-        video: document.getElementById('view-video'),
-        game: document.getElementById('view-game'),
-        locations: document.getElementById('view-locations')
+        locations: document.getElementById('view-locations'),
+        quiz: document.getElementById('view-quiz')
     },
 
     // --- Training ---
-    trainingProgressBar: document.getElementById('training-progress-bar'),
     trainingProgressBar: document.getElementById('training-progress-bar'),
     trainingProgressText: document.getElementById('training-progress-text'),
     trainingContent: document.getElementById('training-content'),
@@ -179,9 +177,11 @@ export function switchTab(tabId) {
     document.querySelectorAll('#sidebar-nav .nav-btn').forEach(btn => {
         const isActive = btn.dataset.tab === tabId;
         if (isActive) {
-            btn.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all bg-green-900/30 text-green-400 border border-green-800/50";
+            btn.classList.add('bg-green-900/30', 'text-green-400', 'border-green-800/50');
+            btn.classList.remove('text-stone-400', 'hover:bg-stone-800', 'hover:text-stone-200');
         } else {
-            btn.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-stone-400 hover:bg-stone-800 hover:text-stone-200";
+            btn.classList.remove('bg-green-900/30', 'text-green-400', 'border-green-800/50');
+            btn.classList.add('text-stone-400', 'hover:bg-stone-800', 'hover:text-stone-200');
         }
     });
 
