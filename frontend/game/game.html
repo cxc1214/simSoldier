@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字冒險遊戲 - 進階視覺版</title>
+    <style>
+        :root {
+            --ui-bg: rgba(20, 20, 20, 0.85);
+            --text-color: #ffffff;
+            --accent-color: #ffd700;
+        }
+
+        body {
+            margin: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        /* 背景層 */
+        #bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.8s ease-in-out;
+            z-index: 1;
+        }
+
+        /* 角色層 */
+        #character-layer {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 80vh;
+            /* 角色高度佔螢幕 80% */
+            z-index: 2;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        #character-img {
+            height: 100%;
+            display: none;
+            /* 預設隱藏 */
+        }
+
+        /* 對話框容器 */
+        #ui-layer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--ui-bg);
+            border-top: 2px solid var(--accent-color);
+            padding: 20px 5%;
+            z-index: 3;
+            box-sizing: border-box;
+        }
+
+        #speaker-name {
+            font-weight: bold;
+            color: var(--accent-color);
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+
+        #text-content {
+            color: var(--text-color);
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            min-height: 80px;
+        }
+
+        #auto-btn {
+            position: absolute;
+            top: 20px;
+            right: 5%;
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        #auto-btn:hover, #auto-btn.active {
+            background: var(--accent-color);
+            color: black;
+            font-weight: bold;
+        }
+
+        #options {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 4;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .btn {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--accent-color);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--accent-color);
+            color: black;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="bg-layer"></div>
+
+    <div id="character-layer">
+        <img id="character-img" src="" alt="character">
+    </div>
+
+    <div id="ui-layer">
+        <button id="auto-btn">Auto</button>
+        <div id="speaker-name"></div>
+        <div id="text-content"></div>
+    </div>
+    <div id="options"></div>
+
+    <script>
+        const bgLayer = document.getElementById('bg-layer');
+        const charImg = document.getElementById('character-img');
+        const nameText = document.getElementById('speaker-name');
+        const mainText = document.getElementById('text-content');
+        const optionsContainer = document.getElementById('options');
+        const autoBtn = document.getElementById('auto-btn');
+
+        let state = {};
+        let currentNextText = null;
+        let isAuto = false;
+        let autoTimer = null;
+        
+        let textNodes = [];
+        // Load story data from story.json
+        fetch('./story.json')
+            .then(response => response.json())
+            .then(data => {
+                textNodes = data;
+                showNode(1);
+            })
+            .catch(err => {
+                console.error('Failed to load story.json:', err);
+            });
+
+        autoBtn.onclick = (e) => {
+            e.stopPropagation();
+            isAuto = !isAuto;
+            autoBtn.classList.toggle('active', isAuto);
+            if (isAuto && currentNextText !== null) {
+                tryAutoNext();
+            } else {
+                clearTimeout(autoTimer);
+            }
+        };
+
+        function tryAutoNext() {
+            clearTimeout(autoTimer);
+            autoTimer = setTimeout(() => {
+                if (isAuto && currentNextText !== null) {
+                    showNode(currentNextText);
+                }
+            }, 1500);
+        }
+
+        // 處理點擊任意處進入下一句（當沒有選項時）
+        document.addEventListener('click', (e) => {
+            if (currentNextText !== null && !e.target.closest('.btn')) {
+                if (isAuto) {
+                    isAuto = false;
+                    autoBtn.classList.remove('active');
+                    clearTimeout(autoTimer);
+                }
+                showNode(currentNextText);
+            }
+        });
+
+        
+
+        function showNode(nodeId) {
+            const node = textNodes.find(n => n.id === nodeId);
+
+            // 更新文字與姓名
+            nameText.innerText = node.speaker;
+            mainText.innerText = node.text;
+
+            // 更新背景
+            if (node.image) {
+                bgLayer.style.backgroundImage = `url('${node.image}')`;
+            }
+
+            // 更新角色
+            if (node.character) {
+                charImg.src = node.character;
+                charImg.style.display = 'block';
+                charImg.style.opacity = '1';
+            } else {
+                charImg.style.opacity = '0';
+                setTimeout(() => { if (charImg.style.opacity === '0') charImg.style.display = 'none'; }, 500);
+            }
+
+            // 更新按鈕
+            optionsContainer.innerHTML = '';
+            currentNextText = null;
+
+            if (node.options && node.options.length > 0) {
+                node.options.forEach(opt => {
+                    const button = document.createElement('button');
+                    button.innerText = opt.text;
+                    button.classList.add('btn');
+                    button.onclick = (e) => {
+                        e.stopPropagation(); // 避免點擊按鈕時觸發背景點擊
+                        showNode(opt.nextText);
+                    };
+                    optionsContainer.appendChild(button);
+                });
+                clearTimeout(autoTimer); // 有選項時暫停自動播放
+            } else if (node.nextText) {
+                // 若沒有選項，但有設定 nextText，則允許點擊畫面繼續
+                currentNextText = node.nextText;
+                if (isAuto) {
+                    tryAutoNext();
+                }
+            }
+        }
+
+        // Game initialization happens after story.json is loaded (see fetch call above)
+    </script>
+</body>
+
+</html>

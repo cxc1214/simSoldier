@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: simsoldier
-    ports: #debug use case dont remove yet
+    ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data:Z  # Added :Z for SELinux
@@ -29,21 +29,23 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/simsoldier
+      SECRET_KEY: your_super_secret_key_change_me
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
     volumes:
       - ./backend/data:/app/data:ro
-    expose:
-      - "8000"
-
-  web:
-    image: nginx:alpine
-    container_name: simsoldier_web
     ports:
-      - "8080:80"
+      - "8000:8000"
+
+  frontend:
+    image: python:3.11-slim
+    container_name: simsoldier_frontend
+    working_dir: /app
     volumes:
-      - ./frontend:/usr/share/nginx/html:ro,Z
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro,Z
-    depends_on:
-      - backend
+      - ./frontend:/app:Z  # Added :Z for SELinux
+    command: python -m http.server 8080
+    ports:
+      - "8080:8080"
 
 volumes:
   postgres_data:
