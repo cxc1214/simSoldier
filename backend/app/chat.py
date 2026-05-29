@@ -4,6 +4,8 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+from .database import SessionLocal
+from .models import QuizQuestion
 
 # Initialize Gemini Client
 api_key = os.getenv("GEMINI_API_KEY")
@@ -93,6 +95,32 @@ def init_knowledge_base():
                 embeddings=[result.embeddings[0].values],
                 documents=[text]
             )
+        # Also seed quiz questions from the database (if available)
+        try:
+            db = SessionLocal()
+            quiz_items = db.query(QuizQuestion).all()
+            for q in quiz_items:
+                # Build a single text blob containing question, options and explanation
+                q_text = f"{q.question}\nA: {q.option_a}\nB: {q.option_b}\nC: {q.option_c}\nD: {q.option_d}"
+                if q.explanation:
+                    q_text += f"\nExplanation: {q.explanation}"
+
+                embed_res = client.models.embed_content(
+                    model="models/gemini-embedding-001",
+                    contents=q_text
+                )
+                collection.add(
+                    ids=[f"quiz_{q.id}"],
+                    embeddings=[embed_res.embeddings[0].values],
+                    documents=[q_text]
+                )
+        except Exception as e:
+            print(f"Failed to seed quiz questions from DB: {e}")
+        finally:
+            try:
+                db.close()
+            except:
+                pass
         print("Knowledge base seeded successfully.")
     except Exception as e:
         print(f"Failed to generate/store embeddings: {e}")
