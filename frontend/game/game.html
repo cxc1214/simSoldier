@@ -9,7 +9,8 @@
         :root {
             --ui-bg: rgba(20, 20, 20, 0.85);
             --text-color: #ffffff;
-            --accent-color: #ffd700;
+            --accent-color: #4ade80;
+            /* 當兵的綠色 */
         }
 
         body {
@@ -32,22 +33,43 @@
             z-index: 1;
         }
 
-        /* 角色層 */
-        #character-layer {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
+        #character-img {
+            position: absolute;
+            bottom: -20px;
+            left: 30%;
             transform: translateX(-50%);
-            height: 80vh;
-            /* 角色高度佔螢幕 80% */
-            z-index: 2;
-            transition: opacity 0.5s, transform 0.5s;
+            height: 40vh;
+            /* 縮小左側對話框角色的尺寸 */
+            z-index: 10;
+            /* 放在對話框前面 */
+            pointer-events: none;
+            display: none;
+            transition: opacity 0.5s;
         }
 
-        #character-img {
-            height: 100%;
+        #center-character-layer {
+            position: fixed;
+            bottom: -20px;
+            /* 稍微往下沉一點，與對話框的圖片基線對齊 */
+            left: 50%;
+            transform: translateX(-50%);
+            height: 100vh;
+            width: 100vw;
+            /* 解除寬度限制，讓圖片由高度撐開 */
+            z-index: 2;
+            /* 背景(1)之上，對話框(3)之下 */
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        #center-character-img {
+            height: 85vh;
+            /* 縱向佔 85% 高度，確保不會被對話框整個擋住 */
+            object-fit: contain;
             display: none;
-            /* 預設隱藏 */
+            transition: opacity 0.5s;
         }
 
         /* 對話框容器 */
@@ -58,41 +80,79 @@
             width: 100%;
             background: var(--ui-bg);
             border-top: 2px solid var(--accent-color);
-            padding: 20px 5%;
+            padding: 20px 2.5%;
             z-index: 3;
             box-sizing: border-box;
+            display: grid;
+            grid-template-columns: 3fr 11fr 2fr;
+            gap: 20px;
+        }
+
+        .speaker-col {
+            position: relative;
+            height: 100%;
+        }
+
+        .text-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100%;
         }
 
         #speaker-name {
             font-weight: bold;
             color: var(--accent-color);
-            font-size: 1.4rem;
+            font-size: 1.8rem;
+            text-align: left;
+            letter-spacing: 2px;
             margin-bottom: 5px;
+            display: none;
+        }
+
+        .name-separator {
+            width: 100%;
+            border-bottom: 2px dotted var(--accent-color);
+            margin-bottom: 15px;
+            opacity: 0.6;
+            display: none;
         }
 
         #text-content {
             color: var(--text-color);
-            font-size: 1.1rem;
+            font-size: 1.5rem;
             line-height: 1.8;
-            margin-bottom: 20px;
-            min-height: 80px;
+            flex-grow: 1;
+            min-height: 100px;
         }
 
-        #auto-btn {
-            position: absolute;
-            top: 20px;
-            right: 5%;
+        #control-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+            z-index: 5;
+            margin-left: 50px;
+        }
+
+        .ctrl-btn {
             background: transparent;
             border: 1px solid var(--accent-color);
             color: var(--accent-color);
-            padding: 5px 15px;
-            border-radius: 15px;
+            padding: 8px 5px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
             font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 1rem;
         }
 
-        #auto-btn:hover, #auto-btn.active {
+        .ctrl-btn:hover,
+        .ctrl-btn.active {
             background: var(--accent-color);
             color: black;
             font-weight: bold;
@@ -128,48 +188,304 @@
             color: black;
             font-weight: bold;
         }
+
+        /* 主畫面 */
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .main-menu-title {
+            color: var(--accent-color);
+            font-size: 4rem;
+            margin-bottom: 50px;
+            letter-spacing: 5px;
+            font-weight: bold;
+        }
+
+        .menu-btn {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--accent-color);
+            color: var(--text-color);
+            padding: 15px 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1.5rem;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+            width: 250px;
+        }
+
+        .menu-btn:hover {
+            background: var(--accent-color);
+            color: black;
+            font-weight: bold;
+        }
+
+        /* 頂部功能選單 */
+        #top-menu-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            /* 游標觸發區域 */
+            z-index: 50;
+        }
+
+        #top-menu {
+            position: absolute;
+            top: -80px;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: var(--ui-bg);
+            border-bottom: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transition: top 0.3s;
+            box-sizing: border-box;
+        }
+
+        #top-menu-container:hover #top-menu,
+        #top-menu:hover {
+            top: 0;
+        }
+
+        .top-btn {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 8px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .top-btn:hover {
+            background: var(--accent-color);
+            color: black;
+            font-weight: bold;
+        }
+
+        /* 歷史紀錄樣式 */
+        #history-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #history-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        #history-list::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+
+        .history-item {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--accent-color);
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-text-col {
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .history-speaker {
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1.2rem;
+        }
+
+        .history-text {
+            color: white;
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+
+        .jump-btn {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .jump-btn:hover {
+            background: var(--accent-color);
+            color: black;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
 
+    <!-- 主畫面 -->
+    <div id="main-menu">
+        <div class="main-menu-title">模擬軍旅</div>
+        <button class="menu-btn" onclick="startGame(event)">開始遊戲</button>
+        <button class="menu-btn" onclick="loadGame(event)">讀取存檔</button>
+    </div>
+
+    <!-- 頂部功能選單 -->
+    <div id="top-menu-container">
+        <div id="top-menu">
+            <button class="top-btn" onclick="selectChapter(event)">章節選擇</button>
+            <button class="top-btn" onclick="manageSaves(event)">遊戲存檔管理</button>
+            <button class="top-btn" onclick="backToMainMenu(event)">主畫面</button>
+        </div>
+    </div>
+
+    <!-- 歷史紀錄 -->
+    <div id="history-layer"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 60; flex-direction: column; padding: 50px 3%; box-sizing: border-box;">
+        <h2 style="color: var(--accent-color); margin-top: 0; text-align: center; font-size: 2rem;">歷史紀錄</h2>
+        <div id="history-list"
+            style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-right: 15px;">
+            <!-- 歷史項目 -->
+        </div>
+        <button class="menu-btn" style="align-self: center; margin-top: 20px; width: 200px; padding: 10px;"
+            onclick="closeHistory(event)">返回遊戲</button>
+    </div>
+
     <div id="bg-layer"></div>
 
-    <div id="character-layer">
-        <img id="character-img" src="" alt="character">
+    <!-- 新增：中央角色圖層 -->
+    <div id="center-character-layer">
+        <img id="center-character-img" src="" alt="center-character">
     </div>
 
     <div id="ui-layer">
-        <button id="auto-btn">Auto</button>
-        <div id="speaker-name"></div>
-        <div id="text-content"></div>
+        <div class="speaker-col">
+            <img id="character-img" src="" alt="character">
+        </div>
+        <div class="text-col">
+            <div id="speaker-name"></div>
+            <div class="name-separator"></div>
+            <div id="text-content"></div>
+        </div>
+        <div id="control-buttons">
+            <button id="auto-btn" class="ctrl-btn">▶ Auto</button>
+            <button id="skip-btn" class="ctrl-btn" onclick="toggleSkip(event)">▶▶skip</button>
+            <button id="history-btn" class="ctrl-btn" onclick="toggleHistory(event)">歷史紀錄</button>
+            <button id="hide-btn" class="ctrl-btn" onclick="hideUI(event)">Hide</button>
+        </div>
     </div>
     <div id="options"></div>
 
     <script>
         const bgLayer = document.getElementById('bg-layer');
         const charImg = document.getElementById('character-img');
+        const centerCharImg = document.getElementById('center-character-img');
         const nameText = document.getElementById('speaker-name');
         const mainText = document.getElementById('text-content');
         const optionsContainer = document.getElementById('options');
         const autoBtn = document.getElementById('auto-btn');
+        const rawImageBaseUrl = 'https://raw.githubusercontent.com/XXXG-00W0-wing/simSoldier_Story/refs/heads/main/img/';
 
         let state = {};
         let currentNextText = null;
         let isAuto = false;
         let autoTimer = null;
-        
+
+        function resolveImageUrl(src) {
+            if (!src) return '';
+            if (/^https?:\/\//i.test(src) || /^data:/i.test(src)) {
+                return src;
+            }
+            const imageName = src.replace(/^.*[\\/]/, '');
+            return rawImageBaseUrl + imageName;
+        }
+
+        function preloadStoryImages(nodes) {
+            const urls = new Set();
+            nodes.forEach(node => {
+                if (node.image) urls.add(resolveImageUrl(node.image));
+                if (node.character) urls.add(resolveImageUrl(node.character));
+            });
+
+            urls.forEach(url => {
+                const img = new Image();
+                img.src = url;
+            });
+        }
+
         let textNodes = [];
+        let historyLog = [];
+        let isHistoryOpen = false;
         // Load story data from story.json
-        fetch('./story.json')
+        fetch('https://raw.githubusercontent.com/XXXG-00W0-wing/simSoldier_Story/refs/heads/main/story.json')
             .then(response => response.json())
             .then(data => {
                 textNodes = data;
-                showNode(1);
+                preloadStoryImages(textNodes);
+                // 初始化不直接顯示劇情，等待點擊「開始遊戲」
             })
             .catch(err => {
                 console.error('Failed to load story.json:', err);
             });
+
+        // 主畫面與功能選單相關函式
+        function startGame(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('main-menu').style.display = 'none';
+            historyLog = [];
+            if (textNodes.length > 0) {
+                showNode(1);
+            } else {
+                setTimeout(() => showNode(1), 500);
+            }
+        }
+
+        function loadGame(e) {
+            if (e) e.stopPropagation();
+            alert("讀取存檔功能尚未實作");
+        }
+
+        function selectChapter(e) {
+            if (e) e.stopPropagation();
+            alert("章節選擇功能尚未實作");
+        }
+
+        function manageSaves(e) {
+            if (e) e.stopPropagation();
+            alert("遊戲存檔管理功能尚未實作");
+        }
+
+        function backToMainMenu(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('main-menu').style.display = 'flex';
+            if (isAuto) {
+                isAuto = false;
+                autoBtn.classList.remove('active');
+                clearTimeout(autoTimer);
+            }
+        }
 
         autoBtn.onclick = (e) => {
             e.stopPropagation();
@@ -191,8 +507,23 @@
             }, 1500);
         }
 
+        function hideUI(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('ui-layer').style.display = 'none';
+        }
+
         // 處理點擊任意處進入下一句（當沒有選項時）
         document.addEventListener('click', (e) => {
+            if (document.getElementById('main-menu').style.display !== 'none') return;
+            if (isHistoryOpen) return;
+            if (document.getElementById('top-menu-container').contains(e.target)) return;
+
+            const uiLayer = document.getElementById('ui-layer');
+            if (uiLayer.style.display === 'none') {
+                uiLayer.style.display = 'grid'; // 恢復對話框
+                return;
+            }
+
             if (currentNextText !== null && !e.target.closest('.btn')) {
                 if (isAuto) {
                     isAuto = false;
@@ -203,28 +534,243 @@
             }
         });
 
-        
+        // 處理鍵盤控制（Enter/空白鍵進入下一句，長按 z 快進，h 歷史紀錄）
+        let isZPressed = false;
+        let skipInterval = null;
 
-        function showNode(nodeId) {
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('main-menu').style.display !== 'none') return;
+
+            if (e.key === 'h' || e.key === 'H') {
+                toggleHistory();
+                return;
+            }
+
+            if (isHistoryOpen) return;
+
+            const uiLayer = document.getElementById('ui-layer');
+            if (uiLayer.style.display === 'none') {
+                if (e.key === 'Enter' || e.code === 'Space') {
+                    if (e.code === 'Space') e.preventDefault();
+                    uiLayer.style.display = 'grid'; // 恢復對話框
+                }
+                return;
+            }
+
+            // Enter 或 空白鍵
+            if ((e.key === 'Enter' || e.code === 'Space') && currentNextText !== null) {
+                if (e.code === 'Space') e.preventDefault(); // 防止空白鍵捲動畫面
+                if (!e.repeat) {
+                    if (isAuto) {
+                        isAuto = false;
+                        autoBtn.classList.remove('active');
+                        clearTimeout(autoTimer);
+                    }
+                    showNode(currentNextText);
+                }
+            }
+
+            // 長按 z 快進
+            if ((e.key === 'z' || e.key === 'Z') && !isZPressed) {
+                isZPressed = true;
+                startSkip();
+                document.getElementById('skip-btn').classList.add('active');
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'z' || e.key === 'Z') {
+                isZPressed = false;
+                stopSkip();
+                document.getElementById('skip-btn').classList.remove('active');
+            }
+        });
+
+        // 避免視窗失去焦點時卡在快進狀態
+        window.addEventListener('blur', () => {
+            isZPressed = false;
+            stopSkip();
+            document.getElementById('skip-btn').classList.remove('active');
+        });
+
+        function toggleSkip(e) {
+            if (e) e.stopPropagation();
+            if (skipInterval) {
+                isZPressed = false;
+                stopSkip();
+                document.getElementById('skip-btn').classList.remove('active');
+            } else {
+                isZPressed = true;
+                startSkip();
+                document.getElementById('skip-btn').classList.add('active');
+            }
+        }
+
+        function startSkip() {
+            if (skipInterval) return;
+            if (currentNextText !== null) skipLogic(); // 先立刻觸發一次
+            skipInterval = setInterval(() => {
+                skipLogic();
+            }, 60); // 每 60 毫秒跳過一句
+        }
+
+        function stopSkip() {
+            if (skipInterval) {
+                clearInterval(skipInterval);
+                skipInterval = null;
+            }
+        }
+
+        function skipLogic() {
+            if (document.getElementById('main-menu').style.display !== 'none') return;
+            if (isHistoryOpen) return;
+
+            // 如果有下一句（且不是選項）
+            if (currentNextText !== null) {
+                if (isAuto) {
+                    isAuto = false;
+                    autoBtn.classList.remove('active');
+                    clearTimeout(autoTimer);
+                }
+                showNode(currentNextText);
+            } else {
+                // 如果遇到選項，快進會自動暫停，並取消選取狀態
+                isZPressed = false;
+                stopSkip();
+                const btn = document.getElementById('skip-btn');
+                if (btn) btn.classList.remove('active');
+            }
+        }
+
+        function toggleHistory(e) {
+            if (e) e.stopPropagation();
+            if (document.getElementById('main-menu').style.display !== 'none') return;
+
+            isHistoryOpen = !isHistoryOpen;
+            const hl = document.getElementById('history-layer');
+            if (isHistoryOpen) {
+                hl.style.display = 'flex';
+                renderHistory();
+                // 暫停快進
+                isZPressed = false;
+                stopSkip();
+                const btn = document.getElementById('skip-btn');
+                if (btn) btn.classList.remove('active');
+            } else {
+                hl.style.display = 'none';
+            }
+        }
+
+        function closeHistory(e) {
+            if (e) e.stopPropagation();
+            isHistoryOpen = false;
+            document.getElementById('history-layer').style.display = 'none';
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            historyLog.forEach((item) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'history-item';
+
+                const textCol = document.createElement('div');
+                textCol.className = 'history-text-col';
+
+                if (item.speaker) {
+                    const spk = document.createElement('div');
+                    spk.className = 'history-speaker';
+                    spk.innerText = item.speaker;
+                    textCol.appendChild(spk);
+                }
+
+                const txt = document.createElement('div');
+                txt.className = 'history-text';
+                txt.innerText = item.text;
+                textCol.appendChild(txt);
+
+                itemDiv.appendChild(textCol);
+
+                const btn = document.createElement('button');
+                btn.className = 'jump-btn';
+                btn.innerText = '跳轉到這裡';
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    closeHistory();
+                    showNode(item.id, true);
+                };
+
+                itemDiv.appendChild(btn);
+                list.appendChild(itemDiv);
+            });
+
+            setTimeout(() => {
+                list.scrollTop = list.scrollHeight;
+            }, 10);
+        }
+
+        window.addEventListener('wheel', (e) => {
+            if (document.getElementById('main-menu').style.display !== 'none') return;
+            if (isHistoryOpen) return;
+
+            if (e.deltaY < 0) { // scroll up
+                toggleHistory();
+            }
+        });
+
+
+
+        function showNode(nodeId, isJump = false) {
             const node = textNodes.find(n => n.id === nodeId);
+            if (!node) return;
+
+            if (isJump) {
+                const idx = historyLog.findIndex(h => h.id === nodeId);
+                if (idx !== -1) {
+                    historyLog = historyLog.slice(0, idx);
+                }
+            }
+
+            historyLog.push({
+                id: node.id,
+                speaker: node.speaker || '',
+                text: node.text
+            });
 
             // 更新文字與姓名
-            nameText.innerText = node.speaker;
+            if (node.speaker) {
+                nameText.innerText = node.speaker;
+                nameText.style.display = 'block';
+                document.querySelector('.name-separator').style.display = 'block';
+            } else {
+                nameText.innerText = '';
+                nameText.style.display = 'none';
+                document.querySelector('.name-separator').style.display = 'none';
+            }
             mainText.innerText = node.text;
 
             // 更新背景
             if (node.image) {
-                bgLayer.style.backgroundImage = `url('${node.image}')`;
+                bgLayer.style.backgroundImage = `url('${resolveImageUrl(node.image)}')`;
             }
 
             // 更新角色
             if (node.character) {
-                charImg.src = node.character;
+                const characterUrl = resolveImageUrl(node.character);
+                charImg.src = characterUrl;
                 charImg.style.display = 'block';
-                charImg.style.opacity = '1';
+                setTimeout(() => { charImg.style.opacity = '1'; }, 10);
+
+                centerCharImg.src = characterUrl;
+                centerCharImg.style.display = 'block';
+                setTimeout(() => { centerCharImg.style.opacity = '1'; }, 10);
             } else {
                 charImg.style.opacity = '0';
-                setTimeout(() => { if (charImg.style.opacity === '0') charImg.style.display = 'none'; }, 500);
+                centerCharImg.style.opacity = '0';
+                setTimeout(() => {
+                    if (charImg.style.opacity === '0') charImg.style.display = 'none';
+                    if (centerCharImg.style.opacity === '0') centerCharImg.style.display = 'none';
+                }, 500);
             }
 
             // 更新按鈕
